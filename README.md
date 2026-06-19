@@ -25,12 +25,13 @@ chamcong/
 ├── CLAUDE.md                  # Ngữ cảnh cho Claude Code
 ├── .gitignore
 └── docs/
-    ├── Dac_ta_phan_mem_cham_cong_CSCC_v1.0.docx   # Đặc tả SRS (bản Word chính thức)
+    ├── Dac_ta_phan_mem_cham_cong_CSCC_v1.1.docx   # Đặc tả SRS (bản Word chính thức)
     ├── 00-srs.md              # Đặc tả SRS (bản markdown để git theo dõi)
     ├── 01-business-rules.md   # Quy tắc nghiệp vụ (giờ làm, OT, nghỉ phép, kỷ luật)
     ├── 02-data-model.md       # Mô hình dữ liệu (các bảng/sheet)
     ├── 03-approval-workflow.md# Luồng duyệt đơn & ma trận phân quyền
-    └── 04-compliance-matrix.md# Bảng đối chiếu Nội quy ↔ chức năng
+    ├── 04-compliance-matrix.md# Bảng đối chiếu Nội quy ↔ chức năng
+    └── 05-legal-insurance.md  # BHXH/BHYT/BHTN & lương tối thiểu (2026)
 ```
 
 ## Lộ trình triển khai

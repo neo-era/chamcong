@@ -13,6 +13,13 @@ Phần mềm chấm công – nghỉ phép – duyệt đơn cho đơn vị **Ch
 - `docs/02-data-model.md` — các bảng dữ liệu.
 - `docs/03-approval-workflow.md` — luồng duyệt + phân quyền.
 - `docs/04-compliance-matrix.md` — đối chiếu Nội quy ↔ chức năng.
+- `docs/05-legal-insurance.md` — BHXH/BHYT/BHTN & lương tối thiểu (cập nhật 2026).
+
+## Hằng số pháp lý hiện hành (đưa vào CauHinh, KHÔNG hardcode)
+
+- Lương tối thiểu Vùng I (TP.HCM) 2026: **5.310.000 đ/tháng** (NĐ 293/2025).
+- Tỷ lệ đóng BHXH/BHYT/BHTN: tổng **32%** (NLĐ 10,5% + DN 21,5%).
+- Áp dụng **Luật BHXH 2024** (hiệu lực 01/7/2025): hỗ trợ nghỉ ốm nửa ngày; thai sản nữ 6 tháng; thai sản nam 5/7/10/14 ngày (trong 60 ngày đầu); con ốm 20/15 ngày.
 
 ## Quy tắc nghiệp vụ TUYỆT ĐỐI không được vi phạm
 

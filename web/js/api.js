@@ -1,0 +1,72 @@
+// ─── api.js ───────────────────────────────────────────────────────────────────
+// Client gọi Google Apps Script Web App.
+// QUY TẮC CORS:
+//   GET  → idToken trong query param (request đơn giản, không cần preflight)
+//   POST → Content-Type: text/plain;charset=utf-8 (tránh preflight)
+//          body JSON có trường idToken bên trong
+
+async function apiGet(action, params = {}) {
+  const token = getIdToken();
+  if (!token) { logout(); throw new Error('Phiên đăng nhập hết hạn'); }
+
+  const qs = new URLSearchParams({ action, idToken: token, ...params }).toString();
+  const url = CONFIG.BACKEND_URL + '?' + qs;
+
+  const resp = await fetch(url, { method: 'GET', redirect: 'follow' });
+  return _parseResp(resp);
+}
+
+async function apiPost(action, data = {}) {
+  const token = getIdToken();
+  if (!token) { logout(); throw new Error('Phiên đăng nhập hết hạn'); }
+
+  const body = JSON.stringify({ action, idToken: token, ...data });
+  const resp = await fetch(CONFIG.BACKEND_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // tránh CORS preflight
+    body,
+    redirect: 'follow'
+  });
+  return _parseResp(resp);
+}
+
+async function _parseResp(resp) {
+  let json;
+  try { json = await resp.json(); }
+  catch (_) { throw new Error('Phản hồi từ máy chủ không hợp lệ'); }
+  if (!json.ok) throw new Error(json.error || 'Lỗi không xác định từ máy chủ');
+  return json;
+}
+
+// ── Shorthand helpers ─────────────────────────────────────────────────────────
+const Api = {
+  // Auth
+  getProfile:         ()           => apiGet('getProfile'),
+
+  // Chấm công
+  getChamCongHomNay:  ()           => apiGet('getChamCongHomNay'),
+  getChamCongKhoang:  (p)          => apiGet('getChamCongKhoang', p),
+  chamVao:            (data)       => apiPost('chamVao', data),
+  chamRa:             (data)       => apiPost('chamRa', data),
+  suaChamCong:        (data)       => apiPost('suaChamCong', data),
+
+  // Nhân viên
+  getNhanVienList:    (p)          => apiGet('getNhanVienList', p || {}),
+  getNhanVien:        (maNV)       => apiGet('getNhanVien', { maNV }),
+  createNhanVien:     (data)       => apiPost('createNhanVien', data),
+  updateNhanVien:     (data)       => apiPost('updateNhanVien', data),
+
+  // Ca
+  getCaList:          ()           => apiGet('getCaList'),
+  createCa:           (data)       => apiPost('createCa', data),
+  updateCa:           (data)       => apiPost('updateCa', data),
+
+  // Lịch trực
+  getLichTrucNgay:    (p)          => apiGet('getLichTrucNgay', p),
+  getLichTrucTuan:    (p)          => apiGet('getLichTrucTuan', p),
+  setLichTruc:        (data)       => apiPost('setLichTruc', data),
+  deleteLichTruc:     (data)       => apiPost('deleteLichTruc', data),
+
+  // CauHinh
+  getCauHinh:         ()           => apiGet('getCauHinh')
+};

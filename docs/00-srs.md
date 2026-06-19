@@ -1,8 +1,8 @@
 # Đặc tả Yêu cầu Phần mềm (SRS) — Hệ thống Chấm công
 
-Phiên bản v1.0 · Đơn vị Chiếu sáng khu vực Trung tâm · Căn cứ Nội quy lao động (QĐ 44/QĐ-CTCSCC) & BLLĐ 2019
+Phiên bản v1.1 · Đơn vị Chiếu sáng khu vực Trung tâm · Căn cứ Nội quy lao động (QĐ 44/QĐ-CTCSCC), BLLĐ 2019 & Luật BHXH 2024
 
-> Bản markdown này là bản sao của file Word `Dac_ta_phan_mem_cham_cong_CSCC_v1.0.docx` để git theo dõi thay đổi. Khi cập nhật, sửa cả hai và tăng phiên bản.
+> Bản markdown này là bản sao của file Word Dac_ta_phan_mem_cham_cong_CSCC_v1.1.docx để git theo dõi thay đổi. Khi cập nhật, sửa cả hai và tăng phiên bản.
 
 ---
 
@@ -232,6 +232,11 @@ Các quy tắc dưới đây được trích trực tiếp từ Nội quy lao đ
 | Ông bà/anh chị em ruột mất; cha/mẹ tái hôn; anh chị em ruột cưới | 1 ngày | Không |
 | Nghỉ không lương thỏa thuận | Theo thỏa thuận | Không |
 | Nghỉ lễ, tết | 11 ngày/năm | Có |
+| Ốm đau (bản thân) – hỗ trợ nửa ngày | 75% lương đóng BHXH | BHXH |
+| Chăm con ốm | 20 ngày (<3 tuổi) / 15 ngày (3–<7 tuổi) | BHXH |
+| Thai sản (nữ) | 6 tháng; sinh đôi +1 tháng/con | BHXH |
+| Thai sản (nam, vợ sinh) | 5 / 7 / 10 / 14 ngày (trong 60 ngày đầu) | BHXH |
+| TNLĐ – Bệnh nghề nghiệp | Theo chế độ | BHXH |
 
 ## 4.5. Ngưỡng kỷ luật theo vắng mặt
 
@@ -454,9 +459,73 @@ Bảng truy vết chứng minh mỗi quy định trọng yếu của Nội quy l
 | GĐ 3 | QH-06, QH-08 | Số dư phép tự động và bảng công tháng xuất Excel. |
 | GĐ 4 | QH-07, QH-09 | Cảnh báo kỷ luật, báo cáo quản trị, hoàn thiện phân quyền. |
 
-# 11. PHỤ LỤC
+# 11. KHUNG PHÁP LÝ BHXH & LƯƠNG TỐI THIỂU
 
-## 11.1. Danh mục loại đơn
+Cập nhật theo quy định hiện hành (2026). Tất cả con số đưa vào sheet CauHinh, không hardcode.
+
+## 11.1. Căn cứ pháp lý cập nhật
+
+- Luật Bảo hiểm xã hội 2024 (41/2024/QH15) — hiệu lực 01/7/2025.
+
+- Luật Việc làm 2025 + Nghị định 374/2025/NĐ-CP (bảo hiểm thất nghiệp).
+
+- Nghị định 293/2025/NĐ-CP — lương tối thiểu vùng từ 01/01/2026.
+
+- Nghị định 188/2025/NĐ-CP (BHYT); Nghị định 158/2025/NĐ-CP (TNLĐ-BNN).
+
+## 11.2. Lương tối thiểu vùng 2026 (NĐ 293/2025)
+
+| **Vùng** | **Theo tháng** | **Theo giờ** |
+| --- | --- | --- |
+| I (gồm TP.HCM) | 5.310.000 đ | 25.500 đ |
+| II | 4.730.000 đ | 22.700 đ |
+| III | 4.140.000 đ | 20.000 đ |
+| IV | 3.700.000 đ | 17.800 đ |
+
+Đơn vị Chiếu sáng khu vực Trung tâm (TP.HCM) áp dụng **Vùng I = 5.310.000 đ/tháng**. Con số này là mốc cho ngưỡng bồi thường “10 tháng lương tối thiểu vùng” tại Điều 35, 36 Nội quy.
+
+## 11.3. Tỷ lệ đóng BHXH, BHYT, BHTN 2026 (tổng 32%)
+
+| **Quỹ** | **Doanh nghiệp** | **Người lao động** |
+| --- | --- | --- |
+| Hưu trí – tử tuất | 14% | 8% |
+| Ốm đau – thai sản | 3% | – |
+| TNLĐ – BNN | 0,5% (hoặc 0,3%) | – |
+| Bảo hiểm thất nghiệp | 1% | 1% |
+| Bảo hiểm y tế | 3% | 1,5% |
+| Tổng | 21,5% | 10,5% |
+
+Lao động nước ngoài: từ 01/01/2026 không đóng bảo hiểm thất nghiệp (Luật Việc làm 2025).
+
+## 11.4. Chế độ ốm đau (Luật BHXH 2024)
+
+- Mức hưởng 75% tiền lương đóng BHXH.
+
+- **MỚI: **nghỉ nửa ngày được hưởng — dưới nửa ngày tính nửa ngày; từ nửa đến dưới 1 ngày tính 1 ngày (mức 1 ngày = mức tháng ÷ 24).
+
+- Bỏ trần 180 ngày bệnh dài ngày; thay bằng 30–70 ngày/năm tùy điều kiện làm việc.
+
+- Chăm con ốm: tối đa 20 ngày/năm/con (<3 tuổi), 15 ngày/năm/con (3–<7 tuổi).
+
+## 11.5. Chế độ thai sản (Luật BHXH 2024)
+
+- Lao động nữ: nghỉ 6 tháng; sinh đôi trở lên +1 tháng/con; hưởng 100% bình quân 6 tháng.
+
+- Lao động nam khi vợ sinh: 5 ngày (thường); 7 ngày (phẫu thuật/sinh <32 tuần); 10 ngày (sinh đôi); 14 ngày (sinh đôi phải phẫu thuật).
+
+- **MỚI: **được nghỉ trong 60 ngày đầu kể từ ngày vợ sinh (trước đây 30 ngày).
+
+## 11.6. Tác động đến hệ thống
+
+- Bổ sung loại nghỉ: Ốm đau, Chăm con ốm, Thai sản nữ, Thai sản nam, TNLĐ-BNN, Khám thai.
+
+- Thêm đơn vị tính nửa ngày; phân biệt nguồn chi trả (Công ty / BHXH / Không lương).
+
+- Thêm tham số CauHinh: lương tối thiểu vùng, tỷ lệ đóng BHXH, định mức ốm/con ốm/thai sản.
+
+# 12. PHỤ LỤC
+
+## 12.1. Danh mục loại đơn
 
 - Đơn nghỉ phép năm.
 
@@ -470,11 +539,11 @@ Bảng truy vết chứng minh mỗi quy định trọng yếu của Nội quy l
 
 - Đơn ra ngoài trong giờ làm việc.
 
-## 11.2. Trường thông tin tối thiểu của một đơn xin phép
+## 12.2. Trường thông tin tối thiểu của một đơn xin phép
 
 - Người tạo, đơn vị, loại đơn, từ ngày – đến ngày, số ngày/giờ, lý do, minh chứng (nếu có), người duyệt từng cấp, trạng thái.
 
-## 11.3. Cấu hình tham số hệ thống (gợi ý)
+## 12.3. Cấu hình tham số hệ thống (gợi ý)
 
 - Giờ ca hành chính và danh mục ca.
 

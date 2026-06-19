@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build
+dist/
+build/
+.vite/
+
+# Env & secrets
+.env
+.env.local
+.clasp.json
+credentials.json
+*.key
+
+# Editor
+.vscode/
+.idea/
+.DS_Store
+
+# Temp Office lock files
+~$*.docx
+~$*.xlsx
+
+# Logs
+*.log
+npm-debug.log*

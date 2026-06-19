@@ -1,15 +1,15 @@
 // ─── api.js ───────────────────────────────────────────────────────────────────
 // Client gọi Google Apps Script Web App.
 // QUY TẮC CORS:
-//   GET  → idToken trong query param (request đơn giản, không cần preflight)
+//   GET  → token trong query param (request đơn giản, không cần preflight)
 //   POST → Content-Type: text/plain;charset=utf-8 (tránh preflight)
-//          body JSON có trường idToken bên trong
+//          body JSON có trường token bên trong
 
 async function apiGet(action, params = {}) {
-  const token = getIdToken();
+  const token = getToken();
   if (!token) { logout(); throw new Error('Phiên đăng nhập hết hạn'); }
 
-  const qs = new URLSearchParams({ action, idToken: token, ...params }).toString();
+  const qs = new URLSearchParams({ action, token, ...params }).toString();
   const url = CONFIG.BACKEND_URL + '?' + qs;
 
   const resp = await fetch(url, { method: 'GET', redirect: 'follow' });
@@ -17,13 +17,13 @@ async function apiGet(action, params = {}) {
 }
 
 async function apiPost(action, data = {}) {
-  const token = getIdToken();
+  const token = getToken();
   if (!token) { logout(); throw new Error('Phiên đăng nhập hết hạn'); }
 
-  const body = JSON.stringify({ action, idToken: token, ...data });
+  const body = JSON.stringify({ action, token, ...data });
   const resp = await fetch(CONFIG.BACKEND_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // tránh CORS preflight
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body,
     redirect: 'follow'
   });
@@ -42,6 +42,8 @@ async function _parseResp(resp) {
 const Api = {
   // Auth
   getProfile:         ()           => apiGet('getProfile'),
+  doiMatKhau:         (data)       => apiPost('doiMatKhau', data),
+  resetMatKhau:       (data)       => apiPost('resetMatKhau', data),
 
   // Chấm công
   getChamCongHomNay:  ()           => apiGet('getChamCongHomNay'),

@@ -30,38 +30,61 @@
 
 ```bash
 clasp login
-cp backend/.clasp.json.example backend/.clasp.json
 ```
 
-Mở `backend/.clasp.json`, điền `scriptId`:
-```json
-{
-  "scriptId": "YOUR_SCRIPT_ID_HERE",
-  "rootDir": "./backend"
-}
-```
+Kiểm tra file `.clasp.json` tại thư mục gốc dự án — đã có sẵn `scriptId`.
+Nếu deploy trên máy mới, thay `scriptId` bằng Script ID vừa tạo.
 
-### 2c. Liên kết script với Spreadsheet
-
-Trong file `backend/Code.gs`, sửa dòng đầu:
-```javascript
-const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID_HERE';
-```
-
-### 2d. Upload code
+### 2c. Upload code
 
 ```bash
-clasp push
+clasp push --force
 ```
+
+### 2d. Đặt khóa bí mật SESSION_SECRET
+
+Trong Apps Script Editor → **Project Settings → Script Properties → Add property**:
+
+| Property | Value |
+|----------|-------|
+| `SESSION_SECRET` | *(chuỗi ngẫu nhiên dài ≥ 32 ký tự, ví dụ: `CSCC2026_#k9mXpQ7!vLzN3wRt`)* |
+
+> Đây là khóa ký session token. Giữ bí mật. Đổi key → tất cả user phải đăng nhập lại.
 
 ### 2e. Khởi tạo dữ liệu ban đầu
 
-Trong Apps Script Editor (giao diện web):
-1. Chọn function `setupGD1` → chạy (▶)
-2. Cấp quyền khi được hỏi
-3. Kiểm tra Spreadsheet — các sheet mới tạo tự động
+Trong Apps Script Editor:
+1. Mở file `data/SheetHelper.gs`
+2. Chọn function `setupGD1` trong dropdown → chạy (▶)
+3. Cấp quyền khi được hỏi
+4. Kiểm tra Spreadsheet — các sheet tự động tạo
 
-### 2f. Deploy Web App
+### 2f. Tạo tài khoản Admin đầu tiên
+
+Trong Apps Script Editor, mở **Console** (View → Logs) hoặc chạy function tạm:
+
+```javascript
+// Chạy 1 lần trong Editor để tạo NV Admin
+function taoAdminDauTien() {
+  createNV({
+    maNV:    'NV001',
+    hoTen:   'Nguyễn Văn Admin',
+    donVi:   'Ban Giám đốc',
+    khoi:    'Gián tiếp',
+    chucDanh:'Quản trị viên',
+    dieuKienCV: 'Bình thường',
+    ngayVaoLam: '2020-01-01',
+    trangThai:  'Đang làm',
+    email:   'admin@cscc.vn',
+    vaiTro:  'Admin'
+  });
+  setPassword('NV001', 'DoiNgayMatKhau@2026');
+}
+```
+
+Sau khi chạy xong, đăng nhập bằng `admin@cscc.vn` / `DoiNgayMatKhau@2026` rồi đổi mật khẩu ngay.
+
+### 2g. Deploy Web App
 
 1. **Deploy → New deployment**
 2. Loại: **Web app**
@@ -77,30 +100,16 @@ Trong Apps Script Editor (giao diện web):
 cp web/js/config.example.js web/js/config.js
 ```
 
-Mở `web/js/config.js`, điền:
+Mở `web/js/config.js`, điền Web App URL:
 ```javascript
 const CONFIG = {
-  BACKEND_URL: 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec',
-  GIS_CLIENT_ID: 'YOUR_CLIENT_ID.apps.googleusercontent.com'
+  BACKEND_URL: 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec'
 };
 ```
 
 ---
 
-## Bước 4 — Tạo Google Cloud Project & GIS Client ID
-
-1. Truy cập [console.cloud.google.com](https://console.cloud.google.com)
-2. Tạo project mới (hoặc dùng project gắn với Apps Script)
-3. **APIs & Services → Credentials → Create Credentials → OAuth 2.0 Client ID**
-4. Application type: **Web application**
-5. Authorized JavaScript origins: thêm domain GitHub Pages của bạn
-   (ví dụ: `https://username.github.io`)
-6. Authorized redirect URIs: để trống (GIS dùng popup, không cần redirect URI)
-7. Sao chép **Client ID** → điền vào `web/js/config.js`
-
----
-
-## Bước 5 — Bật GitHub Pages
+## Bước 4 — Bật GitHub Pages
 
 1. Vào repository Settings → Pages
 2. Source: **Deploy from a branch**
@@ -109,33 +118,41 @@ const CONFIG = {
 
 ---
 
-## Bước 6 — Thêm nhân viên đầu tiên (Admin)
-
-Trong sheet **NhanVien**, thêm dòng đầu tiên:
-
-| maNV | hoTen | donVi | khoi | chucDanh | dieuKienCV | ngayVaoLam | quanLyTrucTiep | trangThai | email | vaiTro |
-|------|-------|-------|------|----------|------------|------------|----------------|-----------|-------|--------|
-| NV001 | Nguyễn Văn A | Ban Giám đốc | Gián tiếp | Giám đốc | Bình thường | 2020-01-01 | | Đang làm | admin@example.com | Admin |
-
-> `email` phải khớp với tài khoản Google sẽ đăng nhập.
-> `vaiTro` phải là một trong: `NV`, `ToTruong`, `TruongDonVi`, `BGD`, `HR`, `Admin`
-
----
-
-## Bước 7 — Kiểm tra
+## Bước 5 — Kiểm tra
 
 1. Truy cập GitHub Pages URL
-2. Đăng nhập bằng Google
+2. Đăng nhập bằng email + mật khẩu Admin vừa tạo
 3. Trang chấm công hiển thị → thử chấm vào/ra
 4. Kiểm tra sheet **ChamCong** trong Spreadsheet → dữ liệu xuất hiện
 5. Kiểm tra sheet **AuditLog** → log ghi đúng
 
 ---
 
+## Quản lý tài khoản nhân viên
+
+### Thêm nhân viên mới (Admin/HR)
+
+Trong Apps Script Editor, gọi `createNV({...})` rồi `setPassword('maNV', 'matkhau')`.
+
+Hoặc sau khi có giao diện quản lý (GĐ2): dùng trang `nhanvien.html`.
+
+### Reset mật khẩu
+
+```javascript
+// Chạy trong Editor
+setPassword('NV002', 'MatKhauMoi@2026');
+```
+
+### Đổi mật khẩu (NV tự đổi)
+
+Frontend gọi POST `{ action: 'doiMatKhau', token, matKhauCu, matKhauMoi }`.
+
+---
+
 ## Cập nhật sau khi sửa code backend
 
 ```bash
-clasp push
+clasp push --force
 # Sau đó tạo deployment mới trong Apps Script Editor:
 # Deploy → Manage deployments → tạo version mới
 ```
@@ -146,7 +163,7 @@ clasp push
 
 | Sheet | Mô tả |
 |-------|-------|
-| NhanVien | Hồ sơ nhân viên |
+| NhanVien | Hồ sơ nhân viên (kể cả hash mật khẩu) |
 | Ca | Danh mục ca làm việc |
 | LichTruc | Phân ca theo ngày |
 | ChamCong | Bản ghi chấm công vào/ra |
@@ -159,7 +176,9 @@ clasp push
 
 | Lỗi | Nguyên nhân | Cách sửa |
 |-----|------------|----------|
-| `Token không hợp lệ` | Client ID sai hoặc token hết hạn | Kiểm tra GIS_CLIENT_ID trong config.js |
-| `Email không có trong hệ thống` | Chưa thêm NV vào sheet | Thêm bản ghi vào sheet NhanVien |
-| `CORS error` | Content-Type sai | Đảm bảo POST dùng `text/plain;charset=utf-8` |
-| Sheet không tạo được | Script chưa cấp quyền Sheets | Chạy lại setupGD1() và cấp quyền |
+| `Token không hợp lệ` | SESSION_SECRET chưa đặt hoặc sai | Kiểm tra Script Properties |
+| `Phiên đăng nhập hết hạn` | Token > 8h | Đăng nhập lại |
+| `Email không tồn tại trong hệ thống` | Chưa thêm NV vào sheet | Gọi `createNV()` trong Editor |
+| `Tài khoản chưa được cấp mật khẩu` | Chưa gọi `setPassword()` | Gọi `setPassword('maNV', 'mk')` |
+| `CORS error` | Content-Type sai | POST phải dùng `text/plain;charset=utf-8` |
+| Sheet không tạo được | Script chưa cấp quyền Sheets | Chạy lại `setupGD1()` và cấp quyền |

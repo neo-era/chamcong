@@ -6,7 +6,7 @@ function doGet(e) {
   try {
     const params = e.parameter || {};
     const action = params.action || '';
-    const user   = verifyAndGetUser(params.idToken);
+    const user   = verifyAndGetUser(params.token);
     const result = _routeGet(action, user, params);
     return _jsonOk(result);
   } catch (err) {
@@ -23,7 +23,11 @@ function doPost(e) {
   }
   try {
     const action = body.action || '';
-    const user   = verifyAndGetUser(body.idToken);
+
+    // Route login không cần xác minh token trước
+    if (action === 'login') return _jsonOk(apiLogin(body));
+
+    const user   = verifyAndGetUser(body.token);
     const result = _routePost(action, user, body);
     return _jsonOk(result);
   } catch (err) {
@@ -55,6 +59,8 @@ function _routePost(action, user, body) {
     case 'chamVao':          return apiChamVao(user, body);
     case 'chamRa':           return apiChamRa(user, body);
     case 'suaChamCong':      return apiSuaChamCong(user, body);
+    case 'doiMatKhau':       return apiDoiMatKhau(user, body);
+    case 'resetMatKhau':     return apiResetMatKhau(user, body);
     case 'createNhanVien':   return apiCreateNhanVien(user, body);
     case 'updateNhanVien':   return apiUpdateNhanVien(user, body);
     case 'createCa':         return apiCreateCa(user, body);

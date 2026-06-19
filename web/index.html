@@ -5,56 +5,79 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Đăng nhập — Chấm công CSCC</title>
   <link rel="stylesheet" href="css/main.css">
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
   <div class="login-wrap">
-    <div class="login-card">
+    <div class="login-card" x-data="loginApp()" x-init="init()">
       <div class="login-logo">⚡ CSCC</div>
       <div style="font-size:1.1rem;font-weight:700;margin-bottom:.25rem;">Hệ thống Chấm công</div>
       <div class="login-sub">Chiếu sáng khu vực Trung tâm</div>
 
-      <div id="login-status" style="margin-bottom:1rem;min-height:1.5rem;"></div>
+      <form @submit.prevent="doLogin" style="margin-top:1.5rem;">
+        <div class="form-group">
+          <label for="inp-email">Email</label>
+          <input id="inp-email" type="email" x-model="email"
+                 placeholder="email@cscc.vn" autocomplete="username"
+                 :disabled="loading" required>
+        </div>
+        <div class="form-group" style="margin-top:.75rem;">
+          <label for="inp-mk">Mật khẩu</label>
+          <input id="inp-mk" type="password" x-model="matKhau"
+                 placeholder="••••••" autocomplete="current-password"
+                 :disabled="loading" required>
+        </div>
 
-      <div class="g-signin-wrap">
-        <div id="g-signin-btn"></div>
-      </div>
+        <div x-show="errorMsg" x-text="errorMsg"
+             class="alert alert-danger" style="margin-top:.75rem;"></div>
 
-      <p style="margin-top:1.5rem;font-size:.78rem;color:var(--gray-5);">
-        Đăng nhập bằng tài khoản Google của đơn vị.<br>
-        Liên hệ HR/Admin nếu không vào được.
+        <button type="submit" class="btn btn-primary" style="width:100%;margin-top:1rem;"
+                :disabled="loading">
+          <span x-show="!loading">Đăng nhập</span>
+          <span x-show="loading">Đang xác thực…</span>
+        </button>
+      </form>
+
+      <p style="margin-top:1.25rem;font-size:.78rem;color:var(--gray-5);text-align:center;">
+        Tài khoản do HR/Admin cấp.<br>Liên hệ Admin nếu không vào được.
       </p>
     </div>
   </div>
 
   <script src="js/config.js"></script>
   <script src="js/auth.js"></script>
+  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
   <script>
-    // Đã đăng nhập → redirect ngay
-    if (isLoggedIn()) {
-      const redirect = sessionStorage.getItem('cc_redirect') || 'chamcong.html';
-      sessionStorage.removeItem('cc_redirect');
-      window.location.href = redirect;
-    }
+    function loginApp() {
+      return {
+        email: '',
+        matKhau: '',
+        loading: false,
+        errorMsg: '',
 
-    function onGISReady() {
-      initGISLogin(function(payload) {
-        const statusEl = document.getElementById('login-status');
-        statusEl.innerHTML = '<div class="alert alert-success">Xin chào, <strong>' + payload.name + '</strong>! Đang chuyển trang…</div>';
-        const redirect = sessionStorage.getItem('cc_redirect') || 'chamcong.html';
-        sessionStorage.removeItem('cc_redirect');
-        setTimeout(() => { window.location.href = redirect; }, 600);
-      });
-    }
+        init() {
+          if (isLoggedIn()) {
+            const redirect = sessionStorage.getItem('cc_redirect') || 'chamcong.html';
+            sessionStorage.removeItem('cc_redirect');
+            window.location.href = redirect;
+          }
+        },
 
-    // GIS script có thể load sau DOM
-    window.addEventListener('load', function() {
-      if (window.google && google.accounts) onGISReady();
-    });
-    // Hoặc dùng callback attribute của script tag
-    document.querySelector('script[src*="gsi"]').addEventListener('load', function() {
-      if (!isLoggedIn()) onGISReady();
-    });
+        async doLogin() {
+          this.errorMsg = '';
+          this.loading  = true;
+          try {
+            await login(this.email, this.matKhau);
+            const redirect = sessionStorage.getItem('cc_redirect') || 'chamcong.html';
+            sessionStorage.removeItem('cc_redirect');
+            window.location.href = redirect;
+          } catch (e) {
+            this.errorMsg = e.message;
+          } finally {
+            this.loading = false;
+          }
+        }
+      };
+    }
   </script>
 </body>
 </html>

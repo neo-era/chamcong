@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Đăng nhập — Chấm công CSCC</title>
+  <link rel="stylesheet" href="css/main.css">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-logo">⚡ CSCC</div>
+      <div style="font-size:1.1rem;font-weight:700;margin-bottom:.25rem;">Hệ thống Chấm công</div>
+      <div class="login-sub">Chiếu sáng khu vực Trung tâm</div>
+
+      <div id="login-status" style="margin-bottom:1rem;min-height:1.5rem;"></div>
+
+      <div class="g-signin-wrap">
+        <div id="g-signin-btn"></div>
+      </div>
+
+      <p style="margin-top:1.5rem;font-size:.78rem;color:var(--gray-5);">
+        Đăng nhập bằng tài khoản Google của đơn vị.<br>
+        Liên hệ HR/Admin nếu không vào được.
+      </p>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    // Đã đăng nhập → redirect ngay
+    if (isLoggedIn()) {
+      const redirect = sessionStorage.getItem('cc_redirect') || 'chamcong.html';
+      sessionStorage.removeItem('cc_redirect');
+      window.location.href = redirect;
+    }
+
+    function onGISReady() {
+      initGISLogin(function(payload) {
+        const statusEl = document.getElementById('login-status');
+        statusEl.innerHTML = '<div class="alert alert-success">Xin chào, <strong>' + payload.name + '</strong>! Đang chuyển trang…</div>';
+        const redirect = sessionStorage.getItem('cc_redirect') || 'chamcong.html';
+        sessionStorage.removeItem('cc_redirect');
+        setTimeout(() => { window.location.href = redirect; }, 600);
+      });
+    }
+
+    // GIS script có thể load sau DOM
+    window.addEventListener('load', function() {
+      if (window.google && google.accounts) onGISReady();
+    });
+    // Hoặc dùng callback attribute của script tag
+    document.querySelector('script[src*="gsi"]').addEventListener('load', function() {
+      if (!isLoggedIn()) onGISReady();
+    });
+  </script>
+</body>
+</html>

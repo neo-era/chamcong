@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chấm công — CSCC</title>
+  <link rel="stylesheet" href="css/main.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body>
+
+<!-- Header -->
+<header class="app-header">
+  <div class="logo">⚡ CSCC Chấm công</div>
+  <div class="user-info">
+    <nav class="nav-links hide-mobile">
+      <a href="chamcong.html" data-page="chamcong">Chấm công</a>
+      <a href="phanca.html"   data-page="phanca"   data-roles="ToTruong,TruongDonVi,HR,Admin,BGD">Phân ca</a>
+      <a href="nhanvien.html" data-page="nhanvien" data-roles="HR,Admin">Nhân viên</a>
+    </nav>
+    <span id="header-name">—</span>
+    <span id="header-role" style="opacity:.7;font-size:.8rem;"></span>
+    <button class="btn btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3);padding:.3rem .7rem;font-size:.8rem;"
+            onclick="logout()">Đăng xuất</button>
+  </div>
+</header>
+
+<!-- Main -->
+<div class="container" x-data="chamCongApp()" x-init="init()">
+
+  <!-- Loading -->
+  <div x-show="loading" style="text-align:center;padding:3rem;">
+    <div class="spinner spinner-dark" style="width:2.5rem;height:2.5rem;margin:0 auto 1rem;"></div>
+    <div style="color:var(--gray-5);">Đang tải…</div>
+  </div>
+
+  <div x-show="!loading">
+
+    <!-- Thông báo -->
+    <div x-show="errorMsg" class="alert alert-error" x-text="errorMsg"></div>
+    <div x-show="successMsg" class="alert alert-success" x-text="successMsg"></div>
+
+    <!-- Card ca hôm nay -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;">
+        <div>
+          <div style="font-size:.85rem;color:var(--gray-5);">Hôm nay</div>
+          <div style="font-weight:700;font-size:1.05rem;" x-text="'Thứ ' + _fmtNgay(ngay)"></div>
+        </div>
+        <div x-show="ca" style="text-align:right;">
+          <div style="font-size:.8rem;color:var(--gray-5);">Ca làm việc</div>
+          <div style="font-weight:600;" x-text="ca ? ca.tenCa : '—'"></div>
+          <div style="font-size:.8rem;color:var(--gray-5);" x-text="ca ? ca.gioBatDau + ' – ' + ca.gioKetThuc : ''"></div>
+        </div>
+      </div>
+
+      <!-- Trạng thái -->
+      <div x-show="chamCong" style="margin-bottom:1rem;">
+        <ul class="info-list">
+          <li>
+            <span class="label">Giờ vào</span>
+            <span class="value" x-text="gioVaoFmt"></span>
+          </li>
+          <li>
+            <span class="label">Giờ ra</span>
+            <span class="value" x-text="gioRaFmt"></span>
+          </li>
+          <li>
+            <span class="label">Trạng thái</span>
+            <span :class="'badge ' + trangThaiLabel.cls" x-text="trangThaiLabel.label"></span>
+          </li>
+          <li x-show="chamCong && chamCong.nguon">
+            <span class="label">Nguồn</span>
+            <span class="value" x-text="chamCong ? chamCong.nguon : ''"></span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- GPS toggle -->
+      <div style="margin-bottom:1rem;display:flex;align-items:center;gap:.75rem;">
+        <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.88rem;">
+          <input type="checkbox" :checked="gpsEnabled" @change="toggleGPS()" :disabled="gpsLoading">
+          <span>Kèm toạ độ GPS (hiện trường)</span>
+          <span x-show="gpsLoading" class="spinner spinner-dark" style="width:1rem;height:1rem;"></span>
+        </label>
+        <span x-show="gpsEnabled && toaDo" style="font-size:.8rem;color:var(--green);">
+          📍 <span x-text="toaDo ? toaDo.lat.toFixed(4)+', '+toaDo.lng.toFixed(4) : ''"></span>
+        </span>
+      </div>
+
+      <!-- Nút chấm công -->
+      <button class="cham-cong-btn btn-vao"
+              :disabled="!coTheVao"
+              @click="chamVao()">
+        <span x-show="submitting && !daVao" class="spinner"></span>
+        <span>▶ CHẤM CÔNG VÀO</span>
+      </button>
+
+      <button class="cham-cong-btn btn-ra"
+              :disabled="!coTheRa"
+              @click="chamRa()">
+        <span x-show="submitting && daVao && !daRa" class="spinner"></span>
+        <span>■ CHẤM CÔNG RA</span>
+      </button>
+
+      <p x-show="daRa" style="text-align:center;font-size:.85rem;color:var(--gray-5);margin-top:.5rem;">
+        Hoàn tất chấm công hôm nay.
+      </p>
+    </div>
+
+    <!-- Lịch sử 7 ngày -->
+    <div class="card" x-show="danhSachCC.length">
+      <div class="card-title">Lịch sử 7 ngày gần nhất</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Ngày</th>
+              <th>Ca</th>
+              <th>Vào</th>
+              <th>Ra</th>
+              <th>Trạng thái</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="cc in danhSachCC" :key="cc.ngay">
+              <tr>
+                <td x-text="_fmtNgay(cc.ngay)"></td>
+                <td x-text="cc.maCa || '—'"></td>
+                <td x-text="_fmtGio(cc.gioVao)"></td>
+                <td x-text="_fmtGio(cc.gioRa)"></td>
+                <td><span :class="'badge ' + badgeCls(cc.trangThai)" x-text="cc.trangThai || '—'"></span></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /!loading -->
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/chamcong.js"></script>
+</body>
+</html>

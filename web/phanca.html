@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Phân ca — CSCC</title>
+  <link rel="stylesheet" href="css/main.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <style>
+    .grid-week {
+      display: grid;
+      grid-template-columns: 160px repeat(7, 1fr);
+      gap: 3px;
+      font-size: .82rem;
+    }
+    .grid-week .header-cell {
+      background: var(--gray-2);
+      padding: .4rem .5rem;
+      font-weight: 600;
+      text-align: center;
+      border-radius: .25rem;
+      color: var(--gray-7);
+    }
+    .grid-week .nv-cell {
+      padding: .4rem .5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .grid-week .nv-cell .ten { font-weight: 600; }
+    .grid-week .nv-cell .donvi { font-size: .75rem; color: var(--gray-5); }
+  </style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="logo">⚡ CSCC Phân ca</div>
+  <div class="user-info">
+    <nav class="nav-links hide-mobile">
+      <a href="chamcong.html" data-page="chamcong">Chấm công</a>
+      <a href="phanca.html"   data-page="phanca">Phân ca</a>
+      <a href="nhanvien.html" data-page="nhanvien" data-roles="HR,Admin">Nhân viên</a>
+    </nav>
+    <span id="header-name">—</span>
+    <button class="btn btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3);padding:.3rem .7rem;font-size:.8rem;"
+            onclick="logout()">Đăng xuất</button>
+  </div>
+</header>
+
+<div class="container-wide" x-data="phanCaApp()" x-init="init()">
+
+  <div x-show="loading" style="text-align:center;padding:3rem;">
+    <div class="spinner spinner-dark" style="width:2.5rem;height:2.5rem;margin:0 auto;"></div>
+  </div>
+
+  <div x-show="!loading">
+
+    <div x-show="errorMsg"   class="alert alert-error"   x-text="errorMsg"></div>
+    <div x-show="successMsg" class="alert alert-success" x-text="successMsg"></div>
+
+    <!-- Điều hướng tuần -->
+    <div class="card" style="padding:.75rem 1rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+      <button class="btn btn-ghost" @click="tuanTruoc()">← Tuần trước</button>
+      <div style="font-weight:700;font-size:1rem;">
+        Tuần <span x-text="fmtNgayNgan(tuanBatDau)"></span> – <span x-text="fmtNgayNgan(tuanKetThuc)"></span>
+      </div>
+      <button class="btn btn-ghost" @click="tuanSau()">Tuần sau →</button>
+      <div style="margin-left:auto;font-size:.82rem;color:var(--gray-5);">
+        Click ô để phân ca · Để trống = theo ca mặc định
+      </div>
+    </div>
+
+    <!-- Danh mục ca (chú thích màu) -->
+    <div class="card" style="padding:.75rem 1rem;display:flex;gap:.75rem;flex-wrap:wrap;">
+      <span style="font-size:.82rem;font-weight:600;color:var(--gray-7);">Danh mục ca:</span>
+      <template x-for="ca in danhSachCa" :key="ca.maCa">
+        <span style="font-size:.8rem;background:var(--blue-lt);color:var(--blue);padding:.2rem .6rem;border-radius:.25rem;">
+          <strong x-text="ca.tenCa"></strong>
+          (<span x-text="ca.gioBatDau"></span>–<span x-text="ca.gioKetThuc"></span>)
+        </span>
+      </template>
+    </div>
+
+    <!-- Grid lịch tuần -->
+    <div class="card" style="padding:1rem;overflow-x:auto;">
+      <div class="grid-week">
+        <!-- Header: tên + 7 ngày -->
+        <div class="header-cell">Nhân viên</div>
+        <template x-for="(ngay, i) in ngaysTuan" :key="ngay">
+          <div class="header-cell">
+            <div x-text="thuLabels[i]"></div>
+            <div style="font-weight:400;font-size:.78rem;" x-text="fmtNgayNgan(ngay)"></div>
+          </div>
+        </template>
+
+        <!-- Từng NV -->
+        <template x-for="nv in danhSachNV" :key="nv.maNV">
+          <!-- Cột tên -->
+          <div class="nv-cell" style="background:var(--gray-1);border-radius:.25rem;">
+            <div class="ten" x-text="nv.hoTen"></div>
+            <div class="donvi" x-text="nv.donVi"></div>
+          </div>
+          <!-- 7 ô ngày -->
+          <template x-for="ngay in ngaysTuan" :key="nv.maNV+'_'+ngay">
+            <div class="phanca-cell"
+                 :class="getMaCa(nv.maNV, ngay) ? 'has-ca' : ''"
+                 @click="moModalPhanCa(nv.maNV, ngay)"
+                 :title="getTenCa(nv.maNV, ngay) || 'Click để phân ca'">
+              <span x-text="getTenCa(nv.maNV, ngay) || '+'"></span>
+            </div>
+          </template>
+        </template>
+
+        <div x-show="!danhSachNV.length" style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--gray-5);">
+          Không có nhân viên đang làm việc
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /!loading -->
+
+  <!-- Modal phân ca -->
+  <div class="modal-overlay" x-show="showModal" x-cloak @click.self="showModal=false">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Phân ca</h3>
+        <button class="modal-close" @click="showModal=false">×</button>
+      </div>
+      <div class="modal-body">
+        <div x-show="errorMsg" class="alert alert-error" x-text="errorMsg"></div>
+
+        <!-- Cảnh báo -->
+        <template x-for="cb in canhBaos" :key="cb">
+          <div class="alert alert-warning" x-text="cb"></div>
+        </template>
+
+        <p style="font-size:.88rem;color:var(--gray-7);margin-bottom:1rem;">
+          Nhân viên: <strong x-text="modalMaNV"></strong> &nbsp;·&nbsp;
+          Ngày: <strong x-text="fmtNgayNgan(modalNgay)"></strong>
+        </p>
+
+        <div class="form-group">
+          <label class="form-label">Chọn ca (để trống = xoá phân ca)</label>
+          <select class="form-control" x-model="modalMaCa">
+            <option value="">— Không phân ca —</option>
+            <template x-for="ca in danhSachCa" :key="ca.maCa">
+              <option :value="ca.maCa" x-text="ca.tenCa + ' (' + ca.gioBatDau + '–' + ca.gioKetThuc + ')'"></option>
+            </template>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" @click="showModal=false">Huỷ</button>
+        <button class="btn btn-danger" x-show="getMaCa(modalMaNV, modalNgay)" @click="xoaPhanCa()" :disabled="submitting">Xoá ca</button>
+        <button class="btn btn-primary" @click="luuPhanCa()" :disabled="submitting">
+          <span x-show="submitting" class="spinner"></span>
+          Lưu
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/phanca.js"></script>
+</body>
+</html>

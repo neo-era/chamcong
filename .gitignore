@@ -15,6 +15,9 @@ build/
 credentials.json
 *.key
 
+# Frontend config (chứa Client ID thật — KHÔNG commit)
+web/js/config.js
+
 # Editor
 .vscode/
 .idea/

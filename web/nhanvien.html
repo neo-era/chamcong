@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quản lý nhân viên — CSCC</title>
+  <link rel="stylesheet" href="css/main.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="logo">⚡ CSCC Nhân viên</div>
+  <div class="user-info">
+    <nav class="nav-links hide-mobile">
+      <a href="chamcong.html" data-page="chamcong">Chấm công</a>
+      <a href="phanca.html"   data-page="phanca"   data-roles="ToTruong,TruongDonVi,HR,Admin,BGD">Phân ca</a>
+      <a href="nhanvien.html" data-page="nhanvien" data-roles="HR,Admin">Nhân viên</a>
+    </nav>
+    <span id="header-name">—</span>
+    <button class="btn btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3);padding:.3rem .7rem;font-size:.8rem;"
+            onclick="logout()">Đăng xuất</button>
+  </div>
+</header>
+
+<div class="container-wide" x-data="nhanVienApp()" x-init="init()">
+
+  <div x-show="loading" style="text-align:center;padding:3rem;">
+    <div class="spinner spinner-dark" style="width:2.5rem;height:2.5rem;margin:0 auto;"></div>
+  </div>
+
+  <div x-show="!loading">
+
+    <div x-show="errorMsg"   class="alert alert-error"   x-text="errorMsg"></div>
+    <div x-show="successMsg" class="alert alert-success" x-text="successMsg"></div>
+
+    <!-- Toolbar -->
+    <div class="card" style="padding:1rem;">
+      <div style="display:flex;flex-wrap:wrap;gap:.75rem;align-items:center;">
+        <input class="form-control" style="max-width:220px;" placeholder="Tìm tên / mã / email…"
+               x-model="search" @input="applyFilter()">
+        <select class="form-control" style="max-width:200px;" x-model="filterDonVi" @change="applyFilter()">
+          <option value="">— Tất cả đơn vị —</option>
+          <template x-for="dv in donViOptions" :key="dv">
+            <option :value="dv" x-text="dv"></option>
+          </template>
+        </select>
+        <select class="form-control" style="max-width:160px;" x-model="filterTrangThai" @change="load()">
+          <option value="Đang làm">Đang làm</option>
+          <option value="Thử việc">Thử việc</option>
+          <option value="Nghỉ việc">Nghỉ việc</option>
+          <option value="">Tất cả</option>
+        </select>
+        <button class="btn btn-primary" @click="moModalTao()">+ Thêm nhân viên</button>
+        <span style="margin-left:auto;font-size:.85rem;color:var(--gray-5);">
+          <span x-text="filtered.length"></span> / <span x-text="danhSach.length"></span> nhân viên
+        </span>
+      </div>
+    </div>
+
+    <!-- Bảng -->
+    <div class="card" style="padding:0;">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Mã NV</th>
+              <th>Họ tên</th>
+              <th>Đơn vị</th>
+              <th>Khối</th>
+              <th>Điều kiện CV</th>
+              <th>Vào làm</th>
+              <th>Vai trò</th>
+              <th>Trạng thái</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="nv in filtered" :key="nv.maNV">
+              <tr>
+                <td><code x-text="nv.maNV"></code></td>
+                <td>
+                  <div x-text="nv.hoTen"></div>
+                  <div style="font-size:.78rem;color:var(--gray-5);" x-text="nv.email"></div>
+                </td>
+                <td x-text="nv.donVi || '—'"></td>
+                <td x-text="nv.khoi || '—'"></td>
+                <td x-text="dieuKienLabel(nv.dieuKienCV)"></td>
+                <td x-text="fmtNgay(nv.ngayVaoLam)"></td>
+                <td x-text="nv.vaiTro || 'NV'"></td>
+                <td>
+                  <span :class="'badge ' + (nv.trangThai==='Đang làm'?'badge-success':nv.trangThai==='Thử việc'?'badge-info':'badge-gray')"
+                        x-text="nv.trangThai"></span>
+                </td>
+                <td>
+                  <button class="btn btn-ghost" style="padding:.3rem .6rem;font-size:.8rem;"
+                          @click="moModalSua(nv)">Sửa</button>
+                </td>
+              </tr>
+            </template>
+            <tr x-show="!filtered.length">
+              <td colspan="9" style="text-align:center;padding:2rem;color:var(--gray-5);">Không có nhân viên nào</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /!loading -->
+
+  <!-- Modal thêm/sửa NV -->
+  <div class="modal-overlay" x-show="showModal" x-cloak @click.self="dongModal()">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 x-text="isEdit ? 'Sửa nhân viên' : 'Thêm nhân viên mới'"></h3>
+        <button class="modal-close" @click="dongModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div x-show="errorMsg" class="alert alert-error" x-text="errorMsg"></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+          <div class="form-group">
+            <label class="form-label">Mã NV *</label>
+            <input class="form-control" x-model="form.maNV" :disabled="isEdit" placeholder="VD: NV001">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Họ tên *</label>
+            <input class="form-control" x-model="form.hoTen" placeholder="Nguyễn Văn A">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email *</label>
+            <input class="form-control" type="email" x-model="form.email" :disabled="isEdit">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Đơn vị</label>
+            <input class="form-control" x-model="form.donVi" placeholder="Phòng Kỹ thuật">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Khối</label>
+            <select class="form-control" x-model="form.khoi">
+              <option>Gián tiếp</option>
+              <option>Trực tiếp</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Chức danh</label>
+            <input class="form-control" x-model="form.chucDanh">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Điều kiện CV</label>
+            <select class="form-control" x-model="form.dieuKienCV">
+              <option>Bình thường</option>
+              <option>Nặng nhọc</option>
+              <option>Đặc biệt nặng nhọc</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ngày vào làm</label>
+            <input class="form-control" type="date" x-model="form.ngayVaoLam">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Người quản lý trực tiếp</label>
+            <input class="form-control" x-model="form.quanLyTrucTiep" placeholder="Mã NV cấp trên">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Vai trò</label>
+            <select class="form-control" x-model="form.vaiTro">
+              <option value="NV">Nhân viên</option>
+              <option value="ToTruong">Tổ trưởng</option>
+              <option value="TruongDonVi">Trưởng đơn vị</option>
+              <option value="BGD">Ban giám đốc</option>
+              <option value="HR">Nhân sự</option>
+              <option value="Admin">Quản trị</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Trạng thái</label>
+            <select class="form-control" x-model="form.trangThai">
+              <option>Đang làm</option>
+              <option>Thử việc</option>
+              <option>Nghỉ việc</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" @click="dongModal()">Huỷ</button>
+        <button class="btn btn-primary" @click="luu()" :disabled="submitting">
+          <span x-show="submitting" class="spinner"></span>
+          <span x-text="isEdit ? 'Lưu thay đổi' : 'Tạo nhân viên'"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/nhanvien.js"></script>
+</body>
+</html>

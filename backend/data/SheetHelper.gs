@@ -2,7 +2,7 @@
 // Hàm tiện ích truy cập Google Sheets. Các file data/ khác gọi qua đây.
 // KHÔNG chứa logic nghiệp vụ.
 
-const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID_HERE'; // điền ID từ SETUP.md
+const SPREADSHEET_ID = '1BM8BBQB6Eo3UTztpyvp5SOadSRvgM2PIYp0mVGKwqjA';
 
 function getSpreadsheet() {
   return SpreadsheetApp.openById(SPREADSHEET_ID);

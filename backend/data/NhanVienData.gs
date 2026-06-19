@@ -2,7 +2,7 @@
 
 const NV_SHEET   = 'NhanVien';
 const NV_HEADERS = ['maNV','hoTen','donVi','khoi','chucDanh','dieuKienCV',
-                    'ngayVaoLam','quanLyTrucTiep','trangThai','email','vaiTro'];
+                    'ngayVaoLam','quanLyTrucTiep','trangThai','email','vaiTro','matKhau'];
 
 function getNVByEmail(email) {
   const sh = getSheet(NV_SHEET);
@@ -45,6 +45,40 @@ function updateNV(maNV, updates) {
   delete updates.maNV;
   Object.assign(found.obj, updates);
   updateRow(sh, found.row, found.obj, NV_HEADERS);
+}
+
+// Lưu hash mật khẩu cho NV (Admin gọi, hoặc dùng setPassword() dưới)
+function setMatKhauNV(maNV, matKhauHash) {
+  const sh = getSheet(NV_SHEET);
+  const found = findRow(sh, 'maNV', maNV);
+  if (!found) throw new Error('Không tìm thấy NV: ' + maNV);
+  found.obj.matKhau = matKhauHash;
+  updateRow(sh, found.row, found.obj, NV_HEADERS);
+}
+
+// Thêm cột matKhau vào sheet NhanVien nếu chưa có (migration)
+function addMatKhauColumn() {
+  const sh = getSheet(NV_SHEET);
+  const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  if (!headers.includes('matKhau')) {
+    sh.getRange(1, headers.length + 1).setValue('matKhau');
+    Logger.log('Đã thêm cột matKhau vào sheet NhanVien');
+  } else {
+    Logger.log('Cột matKhau đã tồn tại');
+  }
+}
+
+// ── Hàm tiện ích dùng trong Apps Script Editor ──────────────────────────────
+// Admin chạy: setPassword('NV001', 'matkhau123') để đặt mật khẩu cho NV
+function setPassword(maNV, matKhauRaw) {
+  const hash = _hashSHA256(matKhauRaw);
+  setMatKhauNV(maNV, hash);
+  Logger.log('✓ Đã đặt mật khẩu cho ' + maNV + ' (hash: ' + hash.substring(0,16) + '...)');
+}
+
+function _hashSHA256(str) {
+  const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, str, Utilities.Charset.UTF_8);
+  return digest.map(b => ('0' + (b & 0xff).toString(16)).slice(-2)).join('');
 }
 
 // Tính số năm thâm niên (dùng cho quota phép)

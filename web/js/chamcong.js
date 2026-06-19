@@ -49,7 +49,7 @@ function chamCongApp() {
         const r = await Api.getProfile();
         Object.assign(this.user, r.data);
         sessionStorage.setItem('cc_user', JSON.stringify(this.user));
-      } catch (_) { /* dùng thông tin GIS token */ }
+      } catch (_) { /* dùng thông tin lưu trong sessionStorage */ }
 
       renderHeader('chamcong');
       await this.loadHomNay();

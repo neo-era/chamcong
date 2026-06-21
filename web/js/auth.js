@@ -81,8 +81,9 @@ function renderHeader(activePage) {
     el.style.display = roles.includes(vaiTro) ? '' : 'none';
   });
 
-  // Badge số đơn đang chờ chính mình duyệt (số màu đỏ) trên menu "Duyệt đơn"
-  if (['ToTruong', 'TruongDonVi', 'BGD', 'Admin'].includes(vaiTro)) {
+  // Badge số đơn đang chờ chính mình duyệt (số màu đỏ) trên menu "Duyệt đơn".
+  // Bỏ qua khi đang ở chính trang Duyệt đơn (trang đó tự tải danh sách rồi).
+  if (['ToTruong', 'TruongDonVi', 'BGD', 'Admin'].includes(vaiTro) && activePage !== 'duyetdon') {
     _capNhatBadgeDuyet();
   }
 }

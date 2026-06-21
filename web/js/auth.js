@@ -56,7 +56,17 @@ function renderHeader(activePage) {
 
   const nameEl = document.getElementById('header-name');
   const roleEl = document.getElementById('header-role');
-  if (nameEl) nameEl.textContent = user.hoTen || user.email;
+  if (nameEl) {
+    // Tên người dùng = link tới trang đổi mật khẩu
+    nameEl.innerHTML = '';
+    const a = document.createElement('a');
+    a.href = 'doi-mat-khau.html';
+    a.textContent = '🔑 ' + (user.hoTen || user.email);
+    a.title = 'Đổi mật khẩu';
+    a.style.color = 'inherit';
+    a.style.textDecoration = 'none';
+    nameEl.appendChild(a);
+  }
   if (roleEl) roleEl.textContent = _vaiTroLabel(user.vaiTro);
 
   if (activePage) {

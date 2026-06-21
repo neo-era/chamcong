@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hướng dẫn sử dụng — CSCC</title>
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    .hd-toc a { display:inline-block; margin:.15rem .4rem .15rem 0; font-size:.85rem; }
+    .hd h2 { font-size:1.05rem; margin:1.5rem 0 .5rem; color:var(--blue,#2563eb); scroll-margin-top:70px; }
+    .hd h3 { font-size:.95rem; margin:1rem 0 .4rem; }
+    .hd p, .hd li { line-height:1.6; }
+    .hd ul, .hd ol { padding-left:1.4rem; margin:.4rem 0; }
+    .hd table { width:100%; margin:.5rem 0; }
+    .hd code { background:var(--gray-2); padding:.05rem .35rem; border-radius:.25rem; font-size:.85em; }
+    .hd .note { background:var(--orange-lt); border-left:3px solid var(--orange); padding:.6rem .8rem; border-radius:.25rem; margin:.6rem 0; font-size:.9rem; }
+  </style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="logo">⚡ CSCC Hướng dẫn</div>
+  <div class="user-info">
+    <nav class="nav-links hide-mobile">
+      <a href="chamcong.html" data-page="chamcong">Chấm công</a>
+      <a href="huongdan.html" data-page="huongdan">Hướng dẫn</a>
+      <a href="don-tu.html"   data-page="dontu">Đơn từ</a>
+      <a href="duyet-don.html" data-page="duyetdon" data-roles="ToTruong,TruongDonVi,BGD,Admin">Duyệt đơn</a>
+      <a href="bang-cong.html" data-page="bangcong">Bảng công</a>
+      <a href="so-du-phep.html" data-page="soduphep">Số dư phép</a>
+      <a href="ky-luat.html" data-page="kyluat" data-roles="ToTruong,TruongDonVi,BGD,HR,Admin">Cảnh báo KL</a>
+      <a href="quan-tri.html" data-page="quantri" data-roles="Admin">Quản trị</a>
+      <a href="phanca.html"   data-page="phanca"   data-roles="ToTruong,TruongDonVi,HR,Admin,BGD">Phân ca</a>
+      <a href="nhanvien.html" data-page="nhanvien" data-roles="HR,Admin">Nhân viên</a>
+      <a href="sua-cham-cong.html" data-page="suachamcong" data-roles="HR,Admin">Sửa chấm công</a>
+    </nav>
+    <span id="header-name">—</span>
+    <span id="header-role" style="opacity:.7;font-size:.8rem;"></span>
+    <button class="btn btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3);padding:.3rem .7rem;font-size:.8rem;"
+            onclick="logout()">Đăng xuất</button>
+  </div>
+</header>
+
+<div class="container-wide hd">
+
+  <div class="card" style="padding:1.25rem 1.5rem;">
+    <h1 style="font-size:1.3rem;margin:0 0 .25rem;">Hướng dẫn sử dụng</h1>
+    <p style="color:var(--gray-6);margin:0 0 .75rem;">Hệ thống Chấm công – Nghỉ phép – Duyệt đơn · Chiếu sáng khu vực Trung tâm</p>
+    <div class="hd-toc">
+      <a href="#dangnhap">1. Đăng nhập</a>
+      <a href="#vaitro">2. Vai trò &amp; menu</a>
+      <a href="#chamcong">3. Chấm công</a>
+      <a href="#dontu">4. Tạo đơn</a>
+      <a href="#duyet">5. Duyệt đơn</a>
+      <a href="#phanca">6. Phân ca</a>
+      <a href="#bangcong">7. Bảng công</a>
+      <a href="#phep">8. Số dư phép</a>
+      <a href="#suacc">9. Sửa chấm công</a>
+      <a href="#kyluat">10. Cảnh báo kỷ luật</a>
+      <a href="#quantri">11. Quản trị</a>
+      <a href="#faq">12. Hỏi đáp</a>
+    </div>
+  </div>
+
+  <div class="card" style="padding:1.25rem 1.5rem;">
+
+    <h2 id="dangnhap">1. Đăng nhập</h2>
+    <ol>
+      <li>Nhập <strong>Email</strong> và <strong>Mật khẩu</strong> do quản trị/HR cấp → bấm <strong>Đăng nhập</strong>.</li>
+      <li>Mật khẩu mặc định ban đầu là <code>123456</code> (nên đổi sau).</li>
+      <li>Phiên đăng nhập tự hết hạn sau <strong>8 giờ</strong> — khi đó đăng nhập lại.</li>
+    </ol>
+
+    <h2 id="vaitro">2. Vai trò &amp; menu</h2>
+    <table>
+      <thead><tr><th>Vai trò</th><th>Menu sử dụng</th></tr></thead>
+      <tbody>
+        <tr><td>Nhân viên</td><td>Chấm công · Đơn từ · Bảng công · Số dư phép</td></tr>
+        <tr><td>Tổ trưởng</td><td>(như NV) + Duyệt đơn (cấp 1) · Phân ca · Cảnh báo KL</td></tr>
+        <tr><td>Trưởng đơn vị</td><td>(như Tổ trưởng) + Duyệt đơn (cấp 2)</td></tr>
+        <tr><td>Ban Giám đốc</td><td>Duyệt đơn (cấp 3) · báo cáo toàn đơn vị</td></tr>
+        <tr><td>Nhân sự (HR)</td><td>Nhân viên · Sửa chấm công · Bảng công (khoá kỳ) · Số dư phép (tính quota) · Cảnh báo KL</td></tr>
+        <tr><td>Quản trị (Admin)</td><td>Tất cả + Quản trị (cấu hình, nhật ký)</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="chamcong">3. Chấm công hằng ngày</h2>
+    <ul>
+      <li>Đầu giờ: bấm <strong>CHẤM CÔNG VÀO</strong>. Cuối giờ: bấm <strong>CHẤM CÔNG RA</strong>.</li>
+      <li>Làm hiện trường: bật <strong>GPS</strong> trước khi chấm để gửi kèm toạ độ.</li>
+    </ul>
+    <div class="note">⚠ Điều 7.3 NQLĐ: đi <strong>trễ</strong> hoặc về <strong>sớm</strong> → tính <strong>mất công cả ngày</strong> (không phải chỉ trừ vài phút). Giờ chấm công lấy từ máy chủ.</div>
+
+    <h2 id="dontu">4. Tạo &amp; theo dõi đơn từ</h2>
+    <p>Menu <strong>Đơn từ → Tạo đơn mới</strong>: chọn loại đơn, từ ngày – đến ngày, đơn vị tính (Ngày/Nửa ngày), lý do (bắt buộc), đính kèm.</p>
+    <ul>
+      <li>Bảng "Đơn của tôi" hiển thị trạng thái + tiến độ duyệt từng cấp.</li>
+      <li><strong>Thu hồi</strong> khi đơn còn <em>Chờ duyệt</em>/<em>Bổ sung</em>; <strong>Sửa &amp; nộp lại</strong> khi bị <em>Yêu cầu bổ sung</em>.</li>
+      <li>Đơn <strong>Phép năm</strong> duyệt cuối → tự trừ số dư phép.</li>
+    </ul>
+
+    <h2 id="duyet">5. Duyệt đơn</h2>
+    <p>Menu <strong>Duyệt đơn</strong>: bảng liệt kê đơn đang chờ <strong>chính bạn</strong> duyệt → bấm <strong>Xem &amp; duyệt</strong> → chọn <strong>Duyệt / Từ chối / Yêu cầu bổ sung</strong> (ý kiến bắt buộc khi từ chối/bổ sung).</p>
+    <table>
+      <thead><tr><th>Loại đơn</th><th>Cấp duyệt</th></tr></thead>
+      <tbody>
+        <tr><td>Phép năm / Việc riêng ≤ 2 ngày</td><td>Cấp 1 → Cấp 2</td></tr>
+        <tr><td>Phép năm / Việc riêng &gt; 2 ngày</td><td>Cấp 1 → 2 → 3</td></tr>
+        <tr><td>Nghỉ không lương</td><td>Cấp 1 → 2 → 3 (bắt buộc)</td></tr>
+        <tr><td>Làm thêm giờ (OT)</td><td>Trưởng/Phó đơn vị (cấp 2)</td></tr>
+        <tr><td>Công tác / Ra ngoài, Ốm/Thai sản…</td><td>Cấp 1 (ghi nhận)</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="phanca">6. Phân ca</h2>
+    <p>Menu <strong>Phân ca</strong>: lưới tuần × nhân viên, bấm ô để chọn ca. Hệ thống cảnh báo nếu nghỉ chuyển ca <strong>&lt; 12 giờ</strong> hoặc thiếu <strong>24 giờ</strong> nghỉ tuần.</p>
+
+    <h2 id="bangcong">7. Bảng công tháng</h2>
+    <p>Menu <strong>Bảng công</strong>: chọn <strong>Kỳ công</strong> (kỳ chạy từ <strong>ngày 21 tháng trước đến ngày 20 tháng này</strong>), xem <strong>Chi tiết</strong> (lưới ngày) hoặc <strong>Tổng hợp</strong>, bấm <strong>Xuất Excel (.xlsx)</strong> hoặc CSV.</p>
+    <h3>Bảng mã ký hiệu</h3>
+    <table>
+      <thead><tr><th>Mã</th><th>Ý nghĩa</th><th>Mã</th><th>Ý nghĩa</th></tr></thead>
+      <tbody>
+        <tr><td><code>N</code></td><td>Công ngày</td><td><code>TS</code></td><td>Thai sản / khám thai</td></tr>
+        <tr><td><code>D</code></td><td>Công đêm</td><td><code>KL</code></td><td>Không lương</td></tr>
+        <tr><td><code>P</code></td><td>Nghỉ phép năm</td><td><code>L</code></td><td>Lễ / nghỉ theo lịch</td></tr>
+        <tr><td><code>R</code></td><td>Việc riêng có lương</td><td><code>0</code></td><td>Bỏ việc (trễ/sớm/vắng) — không tính công</td></tr>
+        <tr><td><code>Ô</code></td><td>Nghỉ bệnh / chăm con ốm</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+    <p><strong>Khoá kỳ</strong> (HR/Admin): sau khi chốt công, bấm <strong>Khoá kỳ</strong> → bản ghi không sửa được; <strong>Mở khoá</strong> phải nhập lý do (ghi nhật ký).</p>
+
+    <h2 id="phep">8. Số dư phép</h2>
+    <p>Menu <strong>Số dư phép</strong>: xem Quota / Đã dùng / Còn lại + lịch sử đơn phép đã duyệt.</p>
+    <p>Quota = <strong>12/14/16 ngày</strong> (tuỳ điều kiện công việc) <strong>+ 1 ngày mỗi đủ 5 năm thâm niên</strong>. Chưa đủ 12 tháng → theo tỷ lệ. <strong>HR/Admin</strong> bấm <strong>Tính quota đầu năm</strong> để tính cho toàn bộ NV.</p>
+
+    <h2 id="suacc">9. Sửa chấm công (HR/Admin)</h2>
+    <p>Menu <strong>Sửa chấm công</strong>: chọn NV + khoảng ngày → Tìm → Sửa giờ/trạng thái (<strong>bắt buộc nhập lý do</strong>) hoặc Khoá/Mở khoá từng bản ghi. Mọi thao tác ghi nhật ký (giá trị cũ → mới).</p>
+
+    <h2 id="kyluat">10. Cảnh báo kỷ luật</h2>
+    <p>Menu <strong>Cảnh báo KL</strong>: liệt kê NV chạm ngưỡng bỏ việc theo cửa sổ trượt 30/365 ngày.</p>
+    <ul>
+      <li><strong>Khiển trách</strong>: 3 ngày/30 · <strong>Kéo dài nâng lương</strong>: 4 ngày/30 · <strong>Sa thải</strong>: 5 ngày/30 hoặc 20 ngày/365.</li>
+    </ul>
+    <div class="note">⚠ Hệ thống <strong>chỉ cảnh báo sớm</strong>, <strong>không tự ra quyết định kỷ luật</strong> (Điều 33–35 NQLĐ).</div>
+
+    <h2 id="quantri">11. Quản trị (Admin)</h2>
+    <ul>
+      <li><strong>Cấu hình:</strong> sửa tham số (giờ ca, ngưỡng kỷ luật, ngày lễ, mức phép, mốc cắt kỳ công…) ngay trên web.</li>
+      <li><strong>Nhật ký (AuditLog):</strong> tra cứu mọi thao tác quan trọng, lọc theo ngày / action / mã NV.</li>
+    </ul>
+
+    <h2 id="faq">12. Câu hỏi thường gặp</h2>
+    <ul>
+      <li><strong>Không đăng nhập được?</strong> Kiểm tra email + mật khẩu (mặc định <code>123456</code>); "phiên hết hạn" → đăng nhập lại.</li>
+      <li><strong>Tạo đơn nhưng không ai duyệt?</strong> Hồ sơ chưa có <em>người quản lý trực tiếp</em> → báo HR cập nhật.</li>
+      <li><strong>Số dư phép = 0?</strong> HR chưa "Tính quota đầu năm", hoặc thiếu <em>ngày vào làm</em>.</li>
+      <li><strong>Bảng công lệch ngày?</strong> Kỳ công theo chu kỳ <strong>21 → 20</strong>, không theo lịch dương — đúng thiết kế.</li>
+    </ul>
+
+    <p style="margin-top:1.5rem;font-size:.82rem;color:var(--gray-5);font-style:italic;">
+      Mọi quy tắc nghiệp vụ bắt nguồn từ Nội quy lao động (QĐ 44/QĐ-CTCSCC), Bộ luật Lao động 2019 và Luật BHXH 2024.
+    </p>
+
+  </div>
+
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  if (requireLogin('index.html')) { renderHeader('huongdan'); }
+</script>
+</body>
+</html>

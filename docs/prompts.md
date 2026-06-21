@@ -16,6 +16,7 @@
 | **GĐ4** | Cảnh báo kỷ luật + Quản trị | ✅ Hoàn chỉnh (P3). Cửa sổ trượt 30/365, quét cảnh báo + trigger, trang Cảnh báo KL + Quản trị (sửa CauHinh, xem AuditLog). |
 | **BS** | Chấm công khối Trực tiếp theo giờ | ✅ Hoàn chỉnh (docs/07). Trực tiếp: trễ/sớm chỉ trừ giờ, không kỷ luật; cột soGioCong; bảng công "N·8" + Tổng giờ. |
 | **BS2** | Duyệt mọi đơn đủ 3 cấp (1→2→3) | ✅ Hoàn chỉnh (docs/08). Mọi loại đơn: Tổ trưởng → Trưởng đơn vị → BGĐ/Admin. |
+| **NC** | Backlog nâng cao & tuân thủ | ⏳ Đã lập kế hoạch (docs/09 + PHASE NC). Bảo mật (đổi MK lần đầu, khoá login), trần OT, định mức việc riêng, thông báo, dashboard, tối ưu, PWA, đính kèm, biên bản KL. CHƯA code. |
 
 Thứ tự thực thi đề nghị: **P0 → P1 → P2 → P3 → P4** (mỗi P = một phase bên dưới). **PHASE BS** làm sau cùng (bổ sung).
 
@@ -506,6 +507,114 @@ E2E: đổi 1 NV sang khoi='Trực tiếp' → chấm trễ → bảng công ô 
 Lưu ý vận hành (ghi lại cho người dùng): mỗi NV cần quanLyTrucTiep = Tổ trưởng (cấp 1);
 mỗi đơn vị cần Trưởng đơn vị (cấp 2); cần ≥1 BGĐ/Admin (cấp 3). Nếu quanLyTrucTiep chính là
 Trưởng đơn vị thì cấp 1 và 2 trùng người (duyệt 2 lần) — nên gán Tổ trưởng làm quanLyTrucTiep.
+```
+
+---
+
+# PHASE NC — Nâng cao & Tuân thủ (backlog, chưa code)
+
+> Danh sách + ưu tiên: `docs/09-backlog-tinh-nang.md`. Mỗi prompt self-contained, chạy độc lập.
+> Giữ nguyên quy ước chung (mục 0): CauHinh, AuditLog, phân quyền, POST text/plain.
+
+## NC-A — Bắt đổi mật khẩu lần đầu
+
+```
+[NC-A] Ép đổi mật khẩu lần đầu (45 NV đang dùng chung 123456).
+- NhanVien: thêm cột 'phaiDoiMK' (migration giống soGioCong).
+- data/NhanVienData.datMatKhau: set phaiDoiMK='TRUE' khi đặt mật khẩu (import/reset/admin).
+  apiDoiMatKhau (AuthApi): sau khi user tự đổi → set phaiDoiMK=''.
+- apiLogin trả thêm phaiDoiMK trong user. FE auth.js sau login: nếu user.phaiDoiMK → ép sang
+  doi-mat-khau.html, chặn truy cập trang khác tới khi đổi xong.
+```
+
+## NC-B — Khoá đăng nhập sau N lần sai
+
+```
+[NC-B] Khoá đăng nhập tạm sau nhiều lần sai (chống dò mật khẩu).
+- CauHinh: dang_nhap_toi_da=5, dang_nhap_khoa_phut=15.
+- AuthApi.apiLogin: dùng CacheService (key 'login_fail_'+email) đếm số lần sai;
+  ≥ ngưỡng → ném 'Tài khoản tạm khoá, thử lại sau N phút' (không tiết lộ đúng/sai mật khẩu);
+  đăng nhập đúng → xoá đếm. Ghi AuditLog khi chạm ngưỡng khoá.
+```
+
+## NC-C — Kiểm tra trần OT (Điều 5.3)
+
+```
+[NC-C] Kiểm soát trần làm thêm giờ. Đọc docs/00-srs Mục 4.3.
+- Bổ sung số GIỜ cho đơn OT: DonTu thêm trường soGio (đơn OT donViTinh='Giờ', nhập số giờ).
+- CauHinh: ot_max_ngay=50 (%/ngày), ot_max_thang=40, ot_max_nam=200.
+- rules/OtRules.gs (THUẦN): tongOtTrongKhoang(danhSachDonOT) → tổng giờ; kiemTraTranOT(thangGio, namGio, nguong).
+- api/DonTuApi: khi tạo đơn OT → cảnh báo nếu vượt; khi DUYỆT CUỐI đơn OT → CHẶN nếu vượt
+  trần tháng/năm (đọc các đơn OT 'Đã duyệt' của NV trong tháng/năm + đơn hiện tại).
+```
+
+## NC-D — Định mức nghỉ việc riêng (Mục 4.4)
+
+```
+[NC-D] Kiểm soát định mức nghỉ việc riêng có lương (Điều 27 / Mục 4.4).
+- CauHinh 'dinh_muc_viec_rieng' (JSON): {"Kết hôn bản thân":3,"Con kết hôn":1,"Tang cha mẹ/vợ chồng/con":3,...}.
+- DonTu loaiDon='Việc riêng': thêm trường 'lyDoDinhMuc' (chọn từ danh mục trên).
+- api/DonTuApi.apiTaoDon: nếu Việc riêng → soNgay ≤ định mức của lyDoDinhMuc; vượt → chặn hoặc
+  gợi ý chuyển 'Không lương'. FE don-tu: dropdown lý do định mức khi loaiDon=Việc riêng.
+```
+
+## NC-E — Thông báo trong app (chuông)
+
+```
+[NC-E] Thông báo in-app (bù cho email hay lỗi scope).
+- data/ThongBaoData.gs — sheet ThongBao (maTB, maNV, noiDung, link, daDoc, thoiDiem).
+  themThongBao(maNV, noiDung, link); listChuaDoc(maNV); danhDauDaDoc(maTB|maNV).
+- Sinh thông báo trong DonTuApi: đơn duyệt/từ chối/bổ sung → cho người tạo; đơn mới cần duyệt →
+  cho người duyệt kế tiếp. KyLuatApi: cảnh báo mới → cho HR.
+- api: getThongBao, danhDauDaDoc. FE: chuông 🔔 + số chưa đọc trên header (như badge duyệt);
+  trang/thả dropdown danh sách thông báo.
+```
+
+## NC-F — Dashboard / báo cáo
+
+```
+[NC-F] Trang tổng quan + báo cáo.
+- api/BaoCaoApi.gs: thongKeKy(ky, donVi) → {soDiTre, soVang, tongOT, tongPhep, ...} theo phạm vi quyền;
+  aiDangNghi(ngay) → NV có đơn nghỉ 'Đã duyệt' phủ ngày.
+- web/dashboard.html + js: thẻ số liệu kỳ + danh sách "đang nghỉ hôm nay". Thêm vào nav.
+```
+
+## NC-G — Tối ưu tốc độ (CacheService)
+
+```
+[NC-G] Giảm ~6s/thao tác.
+- data/CauHinhData + NhanVienData: bọc getAllConfig() và listNV() bằng CacheService (TTL 60s);
+  xoá cache khi setConfig/createNV/updateNV.
+- api/DonTuApi.donChoDuyet + BangCongApi: đọc NhanVien/BuocDuyet 1 LẦN, build map, bỏ getNVByMa lặp.
+- Đo lại thời gian trước/sau. KHÔNG đổi hành vi/kết quả.
+```
+
+## NC-H — PWA (cài như app)
+
+```
+[NC-H] Biến web thành PWA.
+- web/manifest.json (name, short_name, icons, start_url='chamcong.html', display='standalone', theme_color).
+- web/sw.js service worker: cache tĩnh (html/css/js) để mở nhanh + offline xem.
+- Link <link rel=manifest> + đăng ký SW trong các trang. Test 'Add to Home Screen' trên Android/iOS.
+```
+
+## NC-I — Đính kèm file thật
+
+```
+[NC-I] Upload minh chứng lên Drive (thay vì chỉ dán URL).
+- api/DonTuApi.apiUploadDinhKem(user, body{tenFile, mime, base64}) → DriveApp tạo file trong thư mục
+  (CauHinh 'drive_folder_dinhkem'), set chia sẻ link, trả URL → lưu DonTu.dinhKem. Scope drive đã có.
+- FE don-tu: <input type=file> → đọc base64 → upload → hiện link. Giới hạn dung lượng.
+```
+
+## NC-J — Biên bản kỷ luật (Điều 28)
+
+```
+[NC-J] Sinh biên bản xử lý kỷ luật từ cảnh báo.
+- api/KyLuatApi.getChiTietViPham(maNV, tuNgay, denNgay) → liệt kê các ngày bỏ việc (ChamCong laBoViec)
+  + trạng thái + lý do.
+- web/bien-ban-ky-luat.html (kiểu in-don.html, window.print): header pháp lý, thông tin NV, bảng ngày
+  vi phạm, mức đề nghị (Điều 33–35), chỗ ký hội đồng. Nút "Lập biên bản" ở trang Cảnh báo KL.
 ```
 
 ---

@@ -67,15 +67,16 @@ function bangCongApp() {
       finally { this.submitting = false; }
     },
 
-    async xuat() {
-      this._clearMsg();
+    async xuat(dinhDang) {
+      this._clearMsg(); this.successMsg = 'Đang tạo file…';
       try {
-        const r = await Api.xuatBangCong({ ky: this.ky, donVi: this.donVi || undefined, loai: this.cheDo });
+        const r = await Api.xuatBangCong({ ky: this.ky, donVi: this.donVi || undefined, loai: this.cheDo, dinhDang: dinhDang || 'xlsx' });
         const a = document.createElement('a');
         a.href = 'data:' + r.data.mimeType + ';base64,' + r.data.base64;
         a.download = r.data.filename;
         document.body.appendChild(a); a.click(); a.remove();
-      } catch (e) { this.errorMsg = e.message; }
+        this.successMsg = 'Đã tải ' + r.data.filename;
+      } catch (e) { this.errorMsg = e.message; this.successMsg = ''; }
     },
 
     // ── Hiển thị ô mã ──────────────────────────────────────────────────────────

@@ -19,7 +19,7 @@ function duyetDonApp() {
     async init() {
       if (!requireLogin('index.html')) return;
       const user = getCurrentUser();
-      if (!['ToTruong', 'TruongDonVi', 'BGD'].includes(user && user.vaiTro)) {
+      if (!['ToTruong', 'TruongDonVi', 'BGD', 'Admin'].includes(user && user.vaiTro)) {
         window.location.href = 'chamcong.html'; return;
       }
       renderHeader('duyetdon');

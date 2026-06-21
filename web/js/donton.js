@@ -23,8 +23,6 @@ function donTuApp() {
 
     async init() {
       if (!requireLogin('index.html')) return;
-      const user = getCurrentUser();
-      if (user && user.vaiTro === 'Admin') { window.location.href = 'chamcong.html'; return; }
       renderHeader('dontu');
       await this.load();
       this.loading = false;

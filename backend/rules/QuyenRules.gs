@@ -14,10 +14,10 @@ const VAI_TRO = {
 // Danh sách vai trò có quyền thực hiện từng chức năng
 const QUYEN_MAP = {
   CHAM_CONG:     ['NV','ToTruong','TruongDonVi','BGD','HR','Admin'],
-  TAO_DON:       ['NV','ToTruong','TruongDonVi','BGD','HR'],
-  DUYET_CAP1:    ['ToTruong','TruongDonVi','BGD'],
-  DUYET_CAP2:    ['TruongDonVi','BGD'],
-  DUYET_CAP3:    ['BGD'],
+  TAO_DON:       ['NV','ToTruong','TruongDonVi','BGD','HR','Admin'],
+  DUYET_CAP1:    ['ToTruong','TruongDonVi','BGD','Admin'],
+  DUYET_CAP2:    ['TruongDonVi','BGD','Admin'],
+  DUYET_CAP3:    ['BGD','Admin'],
   PHAN_CA:       ['ToTruong','TruongDonVi','HR','Admin'],
   QUAN_LY_NV:    ['HR','Admin'],
   QUAN_LY_CA:    ['HR','Admin'],

@@ -108,19 +108,111 @@ function apiMoKhoaKyCong(user, body) {
   return { ok: true, data: { ky: body.ky, soNV: maNVList.length } };
 }
 
-// ── Xuất CSV (UTF-8 có BOM, mở đúng dấu trong Excel) ─────────────────────────
-// GET action=xuatBangCong&ky=&donVi=&loai=chi_tiet|tong_hop
+// ── Xuất bảng công ───────────────────────────────────────────────────────────
+// GET action=xuatBangCong&ky=&donVi=&loai=chi_tiet|tong_hop&dinhDang=csv|xlsx
 function apiXuatBangCong(user, params) {
   const r = apiGetBangCong(user, params).data;
   const loai = params.loai === 'tong_hop' ? 'tong_hop' : 'chi_tiet';
+  if (params.dinhDang === 'xlsx') return _xuatBangCongXlsx(r, loai);
+
+  // Mặc định CSV (UTF-8 có BOM)
   const csv = (loai === 'tong_hop') ? _csvTongHop(r) : _csvChiTiet(r);
-  const content = '﻿' + csv;   // BOM
-  const b64 = Utilities.base64Encode(content, Utilities.Charset.UTF_8);
+  const b64 = Utilities.base64Encode('﻿' + csv, Utilities.Charset.UTF_8);
   return { ok: true, data: {
     filename: 'BangCong_' + loai + '_' + r.ky + '.csv',
     mimeType: 'text/csv;charset=utf-8',
     base64: b64
   } };
+}
+
+// Xuất .xlsx 2 sheet (Chi tiết + Tổng hợp) theo biểu mẫu docs/06.
+// Tạo Spreadsheet tạm → export xlsx → base64 → xoá file tạm.
+function _xuatBangCongXlsx(r, loaiUuTien) {
+  const dv1 = getConfig('don_vi_cap1') || 'CÔNG TY CỔ PHẦN CHIẾU SÁNG CÔNG CỘNG TP.HCM';
+  const dv2 = getConfig('don_vi_cap2') || 'CHIẾU SÁNG KHU VỰC TRUNG TÂM';
+  const ss = SpreadsheetApp.create('BC_' + r.ky + '_' + (new Date().getTime()));
+  try {
+    const shCT = ss.getSheets()[0].setName('Chi tiết');
+    _ghiSheet(shCT, _aoaChiTiet(r, dv1, dv2));
+    const shCC = ss.insertSheet('Tổng hợp');
+    _ghiSheet(shCC, _aoaTongHop(r, dv1, dv2));
+    // Đưa sheet ưu tiên lên đầu
+    if (loaiUuTien === 'tong_hop') ss.setActiveSheet(shCC); else ss.setActiveSheet(shCT);
+    SpreadsheetApp.flush();
+
+    const id = ss.getId();
+    const url = 'https://docs.google.com/spreadsheets/d/' + id + '/export?format=xlsx';
+    const resp = UrlFetchApp.fetch(url, { headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() } });
+    const b64 = Utilities.base64Encode(resp.getBlob().getBytes());
+    return { ok: true, data: {
+      filename: 'BangCong_' + r.ky + '.xlsx',
+      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      base64: b64
+    } };
+  } finally {
+    try { DriveApp.getFileById(ss.getId()).setTrashed(true); } catch (_) {}
+  }
+}
+
+function _ghiSheet(sheet, aoa) {
+  let width = 1;
+  aoa.forEach(row => { if (row.length > width) width = row.length; });
+  const norm = aoa.map(row => { const c = row.slice(); while (c.length < width) c.push(''); return c; });
+  sheet.getRange(1, 1, norm.length, width).setValues(norm);
+  sheet.getRange(1, 1, 4, 1).setFontWeight('bold');     // header pháp lý + tiêu đề
+}
+
+function _aoaChiTiet(r, dv1, dv2) {
+  const aoa = [];
+  aoa.push([dv1]);
+  aoa.push([dv2]);
+  aoa.push(['']);
+  aoa.push(['BẢNG CHI TIẾT CHẤM CÔNG KỲ ' + r.ky + ' (' + r.tuNgay + ' đến ' + r.denNgay + ')']);
+  aoa.push(['']);
+  const head = ['STT', 'Mã NV', 'Họ và tên'];
+  r.ngayList.forEach(d => head.push(d.ngay.substring(8, 10)));
+  head.push('Công ngày', 'Công đêm', 'P', 'R', 'Ô', 'TS', 'KL');
+  aoa.push(head);
+  r.rows.forEach((row, i) => {
+    const cells = [i + 1, row.maNV, row.hoTen];
+    r.ngayList.forEach(d => cells.push(row.days[d.ngay] || ''));
+    const t = row.tongHop;
+    cells.push(t.congNgay, t.congDem, t.nghiP, t.nghiR, t.nghiOm, t.nghiTS, t.nghiKL);
+    aoa.push(cells);
+  });
+  _themChanKy(aoa, head.length);
+  return aoa;
+}
+
+function _aoaTongHop(r, dv1, dv2) {
+  const aoa = [];
+  aoa.push([dv1]);
+  aoa.push([dv2]);
+  aoa.push(['']);
+  aoa.push(['BẢNG TỔNG HỢP CHẤM CÔNG KỲ ' + r.ky + ' (' + r.tuNgay + ' đến ' + r.denNgay + ')']);
+  aoa.push(['']);
+  const head = ['STT', 'Mã NV', 'Đơn vị', 'Họ và tên', 'Công ngày', 'Công đêm',
+    'Nghỉ phép (P)', 'Việc riêng (R)', 'Nghỉ bệnh (Ô)', 'Thai sản (TS)', 'Không lương (KL)', 'Bỏ việc'];
+  aoa.push(head);
+  r.rows.forEach((row, i) => {
+    const t = row.tongHop;
+    aoa.push([i + 1, row.maNV, row.donVi, row.hoTen,
+      t.congNgay, t.congDem, t.nghiP, t.nghiR, t.nghiOm, t.nghiTS, t.nghiKL, t.boViec]);
+  });
+  _themChanKy(aoa, head.length);
+  return aoa;
+}
+
+function _themChanKy(aoa, width) {
+  aoa.push(['']);
+  aoa.push(['']);
+  const r1 = new Array(width).fill('');
+  r1[2] = 'NGƯỜI CHẤM CÔNG';
+  r1[Math.max(4, width - 3)] = 'PHÓ TRƯỞNG ĐƠN VỊ';
+  aoa.push(r1);
+  aoa.push(new Array(width).fill(''));
+  aoa.push(new Array(width).fill(''));
+  aoa.push(new Array(width).fill(''));   // chỗ ký tên
 }
 
 function _csvCell(v) {

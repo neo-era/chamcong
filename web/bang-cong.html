@@ -21,7 +21,7 @@
     <nav class="nav-links hide-mobile">
       <a href="chamcong.html" data-page="chamcong">Chấm công</a>
       <a href="don-tu.html"   data-page="dontu">Đơn từ</a>
-      <a href="duyet-don.html" data-page="duyetdon" data-roles="ToTruong,TruongDonVi,BGD">Duyệt đơn</a>
+      <a href="duyet-don.html" data-page="duyetdon" data-roles="ToTruong,TruongDonVi,BGD,Admin">Duyệt đơn</a>
       <a href="bang-cong.html" data-page="bangcong">Bảng công</a>
       <a href="so-du-phep.html" data-page="soduphep">Số dư phép</a>
       <a href="ky-luat.html" data-page="kyluat" data-roles="ToTruong,TruongDonVi,BGD,HR,Admin">Cảnh báo KL</a>
@@ -63,7 +63,8 @@
       </select>
     </div>
     <div style="margin-left:auto;display:flex;gap:.5rem;">
-      <button class="btn btn-ghost" @click="xuat()">⬇ Xuất Excel (CSV)</button>
+      <button class="btn btn-ghost" @click="xuat('xlsx')">⬇ Xuất Excel (.xlsx)</button>
+      <button class="btn btn-ghost" @click="xuat('csv')">⬇ CSV</button>
       <button class="btn btn-primary" x-show="laQuanLy && moiKhoa" @click="khoa()" :disabled="submitting">🔒 Khoá kỳ</button>
       <button class="btn btn-ghost"   x-show="laQuanLy && !moiKhoa" @click="moKhoa()" :disabled="submitting">🔓 Mở khoá</button>
     </div>

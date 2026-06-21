@@ -14,8 +14,8 @@
 | **GĐ2** | Đơn từ + Quy trình duyệt | ✅ Hoàn chỉnh (P1). Đơn từ 12 loại, duyệt 1–3 cấp, lưu vết BuocDuyet, email thông báo. Hook trừ phép chờ GĐ3. |
 | **GĐ3** | Quản lý phép + Bảng công tháng | ✅ Hoàn chỉnh (P2). Quota phép + trừ/hoàn phép (nối GĐ2), bảng công kỳ 21→20 (chi tiết/tổng hợp), khoá kỳ, xuất CSV. |
 | **GĐ4** | Cảnh báo kỷ luật + Quản trị | ✅ Hoàn chỉnh (P3). Cửa sổ trượt 30/365, quét cảnh báo + trigger, trang Cảnh báo KL + Quản trị (sửa CauHinh, xem AuditLog). |
-| **BS** | Chấm công khối Trực tiếp theo giờ | ⏳ Đã chốt thiết kế (docs/07), CHƯA code. Trực tiếp: trễ/sớm chỉ trừ giờ, không kỷ luật. Xem PHASE BS. |
-| **BS2** | Duyệt mọi đơn đủ 3 cấp (1→2→3) | ⏳ Đã chốt thiết kế (docs/08), CHƯA code. Tổ trưởng → Trưởng đơn vị → BGĐ/Admin cho MỌI loại đơn. Xem PHASE BS2. |
+| **BS** | Chấm công khối Trực tiếp theo giờ | ✅ Hoàn chỉnh (docs/07). Trực tiếp: trễ/sớm chỉ trừ giờ, không kỷ luật; cột soGioCong; bảng công "N·8" + Tổng giờ. |
+| **BS2** | Duyệt mọi đơn đủ 3 cấp (1→2→3) | ✅ Hoàn chỉnh (docs/08). Mọi loại đơn: Tổ trưởng → Trưởng đơn vị → BGĐ/Admin. |
 
 Thứ tự thực thi đề nghị: **P0 → P1 → P2 → P3 → P4** (mỗi P = một phase bên dưới). **PHASE BS** làm sau cùng (bổ sung).
 

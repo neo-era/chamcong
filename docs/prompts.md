@@ -1,300 +1,450 @@
 # Bộ Prompt Thực Thi — Hệ thống Chấm công CSCC
 
-> Paste prompt tương ứng vào Claude Code khi bắt đầu mỗi giai đoạn.
-> Mỗi prompt đã đủ ngữ cảnh để hoạt động độc lập — không cần đọc thêm docs.
+> **Cách dùng:** Mỗi prompt dưới đây là một "đơn vị công việc" hoàn chỉnh. Paste **KHỐI NGỮ CẢNH CHUNG** (mục 0) một lần đầu phiên, rồi paste tiếp prompt của bước đang làm. Làm tuần tự từ trên xuống. Sau mỗi phase chạy prompt nghiệm thu tương ứng trước khi sang phase sau.
+>
+> **Quy ước:** Mọi hằng số pháp lý đọc từ sheet `CauHinh` qua `getConfig`/`getConfigNumber` — KHÔNG hardcode. Mọi thao tác ghi/sửa chấm công, duyệt đơn, khoá/mở kỳ công đều gọi `appendLog`. Timestamp lấy từ `new Date()` phía Apps Script. Tên hàm camelCase tiếng Anh; giao diện 100% tiếng Việt.
 
 ---
 
-## PROMPT-SETUP — Cài đặt lần đầu
+## TRẠNG THÁI DỰ ÁN (cập nhật)
 
-```
-Tôi cần hướng dẫn deploy hệ thống Chấm công CSCC lên Google Apps Script + GitHub Pages.
+| Giai đoạn | Phạm vi | Trạng thái |
+|-----------|---------|-----------|
+| **GĐ1** | Nhân sự + Ca + Chấm công | ✅ Code đầy đủ (51 hàm backend, 4 trang FE). Còn thiếu: UI sửa chấm công cho HR, khoá/mở bảng công ngày. |
+| **GĐ2** | Đơn từ + Quy trình duyệt | ⛔ Chưa có code |
+| **GĐ3** | Quản lý phép + Bảng công tháng | ⛔ Chưa có code |
+| **GĐ4** | Cảnh báo kỷ luật + Quản trị | ⛔ Chưa có code |
 
-Stack:
-- Backend: Google Apps Script (thư mục backend/), đã có Code.gs + appsscript.json
-- Frontend: HTML thuần + Alpine.js (thư mục web/), host GitHub Pages
-- DB: Google Sheets (Spreadsheet riêng)
-- Auth: email + mật khẩu do Admin cấp, lưu hash SHA-256 trong sheet NhanVien.
-        Session token: HMAC-SHA256, hết hạn 8h, ký bằng SESSION_SECRET trong Script Properties.
-
-Cần làm:
-1. Tạo Google Spreadsheet và điền SPREADSHEET_ID vào backend/data/SheetHelper.gs
-2. Tạo Apps Script project, upload bằng clasp (clasp push --force)
-3. Đặt Script Property SESSION_SECRET (chuỗi ngẫu nhiên ≥ 32 ký tự)
-4. Chạy hàm setupGD1() để tạo các sheet
-5. Tạo NV Admin đầu tiên bằng createNV() + setPassword() trong Editor
-6. Deploy Web App (Execute as Me, Access: Anyone) → lấy URL
-7. Sao chép web/js/config.example.js → config.js, điền BACKEND_URL
-8. Bật GitHub Pages (branch main, thư mục /web)
-
-Kiểm tra SETUP.md và hướng dẫn tôi từng bước, xác nhận các giá trị cần điền.
-```
+Thứ tự thực thi đề nghị: **P0 → P1 → P2 → P3 → P4** (mỗi P = một phase bên dưới).
 
 ---
 
-## PROMPT-GĐ1-BACKEND — Backend Giai đoạn 1
+## 0. KHỐI NGỮ CẢNH CHUNG (paste 1 lần đầu mỗi phiên)
 
 ```
-Tôi đang xây dựng hệ thống Chấm công CSCC — Giai đoạn 1 (Nhân sự + Ca + Chấm công).
+Tôi đang phát triển hệ thống Chấm công CSCC (đơn vị Chiếu sáng khu vực Trung tâm).
+Nguồn chân lý: thư mục docs/ (00-srs, 01-business-rules, 02-data-model, 03-approval-workflow,
+04-compliance-matrix, 05-legal-insurance). Mọi quy tắc bắt nguồn từ Nội quy lao động
+(QĐ 44/QĐ-CTCSCC) + BLLĐ 2019 + Luật BHXH 2024.
 
-Stack: Google Apps Script Web App, Google Sheets làm DB.
-Auth: email + mật khẩu (hash SHA-256) lưu trong sheet NhanVien.
-      Backend tạo HMAC session token 8h, ký bằng Script Property SESSION_SECRET.
-      POST action='login' không cần token; mọi action khác cần token trong body.
+STACK:
+- Backend: Google Apps Script Web App (thư mục backend/), DB là Google Sheets.
+- Frontend: HTML thuần + Alpine.js (CDN) + CSS tự viết (web/), host GitHub Pages.
+- Auth: email + mật khẩu (hash SHA-256 trong sheet NhanVien). Backend tạo HMAC session
+  token 8h ký bằng Script Property SESSION_SECRET. action='login' không cần token;
+  mọi action khác cần token.
 
-Quy tắc nghiệp vụ CỐT LÕI (từ QĐ 44/QĐ-CTCSCC):
-1. Giờ HC: Sáng 07:30–11:30, Chiều 13:00–17:00
-2. Điều 7.3: Đi trễ / về sớm / vắng họp đúng giờ = "tự ý bỏ việc ngày hôm đó"
-   → trạng thái TRE hoặc SOM (mất công cả ngày, không chỉ trừ giờ)
-3. Nghỉ chuyển ca ≥ 12h (Điều 22), nghỉ tuần ≥ 24h liên tục (Điều 23)
-4. Mọi tham số (giờ ca, ngưỡng kỷ luật…) đọc từ sheet CauHinh — KHÔNG hardcode
-5. Mọi thao tác sửa chấm công phải ghi AuditLog (người, thời điểm, lý do, giá trị cũ/mới)
-6. Giờ chấm công lấy từ new Date() trên máy chủ — không tin client
+KIẾN TRÚC TẦNG (BẮT BUỘC giữ nguyên):
+  Code.gs (doGet/doPost dispatcher)
+    → api/   (validate input, gọi rules + data; ném throw new Error(msg) khi lỗi)
+      → rules/ (logic THUẦN — KHÔNG truy cập Sheets, KHÔNG import data/)
+      → data/  (truy cập Sheets qua SheetHelper)
+  api/ KHÔNG gọi Sheets trực tiếp. rules/ KHÔNG gọi data/.
 
-Kiến trúc tầng (đã có code):
-- data/  → truy cập Sheets (SheetHelper, NhanVienData, CaData, LichTrucData, ChamCongData, CauHinhData, AuditLogData)
-- rules/ → logic thuần (QuyenRules, ChamCongRules, CaRules) — KHÔNG truy cập Sheets
-- api/   → gọi rules + data (AuthApi, NhanVienApi, CaApi, LichTrucApi, ChamCongApi)
-- Code.gs → doGet/doPost dispatcher
+QUY ƯỚC GIAO TIẾP:
+- POST: Content-Type 'text/plain;charset=utf-8'; body = JSON.stringify({action, token, ...data}).
+  KHÔNG dùng application/json (tránh preflight CORS).
+- GET: token đặt trong query string.
+- Frontend: token lưu sessionStorage key 'cc_token', user lưu 'cc_user'.
+  Dùng helper có sẵn: web/js/api.js (apiGet, apiPost, Api), web/js/auth.js (login, getToken,
+  requireLogin, renderHeader). Alpine x-data function camelCase.
 
-POST sử dụng Content-Type: text/plain;charset=utf-8; body = JSON.stringify({action, token, ...data})
-GET  đặt token trong query string
+QUY TẮC TUYỆT ĐỐI:
+1. Mọi hằng số (giờ ca, ngưỡng kỷ luật, định mức nghỉ, ngưỡng duyệt cấp cao) đọc từ sheet
+   CauHinh qua getConfig(key)/getConfigNumber(key, fallback). KHÔNG hardcode số.
+2. Timestamp chấm công = new Date() phía server. Không tin client.
+3. Gọi appendLog(maNV, email, action, doiTuong, chiTiet) sau MỌI thao tác ghi/sửa chấm công,
+   duyệt đơn, khoá/mở kỳ công, sửa cấu hình.
+4. Phân quyền: chỉ qua backend/rules/QuyenRules.gs — QUYEN_MAP là nguồn chân lý duy nhất.
+   Dùng requireQuyen(user, quyen) ở tầng api/.
+5. Trạng thái chấm công: DU_CONG/TRE/SOM/MAT_CONG/VANG_PHEP/VANG_KHONG_PHEP.
+   TRE và SOM đều tính "bỏ việc cả ngày" (Điều 7.3) — kiểm tra bằng laBoViec(trangThai).
+6. Tên sheet đúng docs/02: NhanVien, Ca, LichTruc, ChamCong, CauHinh, AuditLog,
+   DonTu, BuocDuyet, SoDuPhep, CanhBaoKyLuat (+ BangCong cho GĐ3).
 
-Nhiệm vụ: [mô tả thứ cần làm cụ thể]
-```
+CODE ĐÃ CÓ (tái sử dụng, KHÔNG viết lại):
+- data/SheetHelper.gs: getSheet, getOrCreateSheet, sheetToObjects, findRow, appendRow,
+  updateRow, toDateStr, todayStr, setupGD1.
+- data/CauHinhData.gs: getConfig, getConfigNumber, getAllConfig, setConfig.
+- data/AuditLogData.gs: appendLog.
+- data/NhanVienData.gs: getNVByEmail, getNVByMa, listNV, tinhThamNien, ...
+- data/ChamCongData.gs: getChamCongNgay, getChamCongKhoang, getChamCongDonVi, saveChamCong, ...
+- rules/QuyenRules.gs: VAI_TRO, QUYEN_MAP, hasQuyen, requireQuyen, canViewNV.
+- rules/ChamCongRules.gs: TRANG_THAI_CC, tinhTrangThaiCong, laBoViec, labelTrangThai, tinhSoGioLam.
+- rules/CaRules.gs: kiemTraNghiChuyenCa, kiemTraNghiTuan, kiemTraLichTuan.
 
----
-
-## PROMPT-GĐ1-FRONTEND — Frontend Giai đoạn 1
-
-```
-Tôi đang build frontend cho hệ thống Chấm công CSCC (Giai đoạn 1).
-
-Stack: HTML thuần + Alpine.js (CDN) + CSS tự viết, host GitHub Pages.
-Auth: email + mật khẩu do Admin cấp (KHÔNG dùng Google GIS).
-      Đăng nhập: POST {action:'login', email, matKhau} → nhận session token (8h).
-      Token lưu sessionStorage (key: cc_token); user info lưu key cc_user.
-API: gọi Apps Script Web App qua fetch.
-     POST: Content-Type: text/plain;charset=utf-8; body JSON có trường 'token'.
-     GET: tham số 'token' trong query string.
-
-File cấu hình: web/js/config.js có:
-  CONFIG.BACKEND_URL — URL Apps Script Web App (không có GIS_CLIENT_ID)
-
-Các trang đã có:
-- index.html: form email + mật khẩu → POST login → redirect chamcong.html
-- chamcong.html: chấm vào/ra (PC + GPS), lịch sử 7 ngày
-- nhanvien.html: CRUD nhân viên (HR/Admin only)
-- phanca.html: grid tuần × NV, click ô phân ca, cảnh báo <12h/<24h
-
-Alpine.js data functions trong js/chamcong.js, nhanvien.js, phanca.js
-Shared: js/auth.js (login, logout, getToken, requireLogin) + js/api.js (apiGet, apiPost, Api object)
-
-Lưu ý UI:
-- Trang chấm công: 2 nút lớn "CHẤM CÔNG VÀO" / "CHẤM CÔNG RA"
-- Khi trễ/về sớm: hiện cảnh báo đỏ "mất công ngày — Điều 7.3 NQLĐ"
-- Responsive, mobile-first; GPS dùng navigator.geolocation
-
-Nhiệm vụ: [mô tả thứ cần làm cụ thể]
+Nhiệm vụ cụ thể sẽ nêu trong prompt tiếp theo. Trước khi code, đọc các file liên quan để
+khớp đúng pattern. Sau khi code, liệt kê route mới cần thêm vào Code.gs và key CauHinh mới cần seed.
 ```
 
 ---
 
-## PROMPT-GĐ1-TEST — Kiểm thử nghiệm thu GĐ1
+# PHASE 0 — Hoàn thiện GĐ1 (bịt 2 lỗ hổng)
+
+## P0.1 — Khoá/mở khoá chấm công ngày + UI sửa chấm công cho HR
 
 ```
-Kiểm thử hệ thống Chấm công CSCC Giai đoạn 1. Mọi rule nghiệp vụ trong rules/ phải test được không cần Sheets.
+[GĐ1] Hoàn thiện 2 chức năng còn thiếu của Giai đoạn 1.
 
-Kịch bản cần kiểm thử:
+A. KHOÁ/MỞ KHOÁ BẢN GHI CHẤM CÔNG NGÀY
+- Thêm cột `isLocked` (bool) vào sheet ChamCong nếu chưa có (viết hàm migration
+  ensureChamCongCols() trong data/ChamCongData.gs, gọi an toàn nhiều lần).
+- backend/api/ChamCongApi.gs: thêm
+    apiKhoaChamCong(user, body)   — body {maCC} hoặc {maNV, ngay}; requireQuyen KHOA_BANG_CONG;
+                                     set isLocked=true; appendLog.
+    apiMoKhoaChamCong(user, body) — yêu cầu lyDo; requireQuyen KHOA_BANG_CONG; set isLocked=false;
+                                     appendLog(chiTiet kèm lyDo).
+- apiSuaChamCong: nếu bản ghi isLocked=true → throw 'Bản ghi đã khoá, phải mở khoá trước khi sửa'.
+- Code.gs: thêm route POST 'khoaChamCong', 'moKhoaChamCong'.
 
-A. ChamCongRules.tinhTrangThaiCong():
-   1. Vào 07:29 / Ra 17:01 → DU_CONG
-   2. Vào 07:31 (trễ 1 phút) → TRE (dù ra đúng giờ, vẫn mất công — Điều 7.3)
-   3. Vào 07:29 / Ra 16:59 (về sớm 1 phút) → SOM (mất công — Điều 7.3)
-   4. Không chấm vào → MAT_CONG
-   5. Vào 07:31, grace=5 → DU_CONG (trong ngưỡng ân hạn)
-   6. Ca đêm 17:00–07:00 (qua ngày): vào 17:05 → TRE
+B. UI SỬA CHẤM CÔNG (HR/Admin)
+- Trang mới web/sua-cham-cong.html + web/js/suachamcong.js:
+  * Guard quyền SUA_CHAM_CONG (redirect chamcong.html nếu không đủ quyền).
+  * Chọn NV + khoảng ngày → bảng chấm công (gọi Api tương ứng getChamCongKhoang).
+  * Mỗi dòng: sửa gioVao/gioRa/trangThai + ô lyDo (bắt buộc) → gọi suaChamCong.
+  * Nút khoá/mở khoá từng dòng; dòng đã khoá hiện badge "Đã khoá" và disable sửa.
+  * Hiển thị trạng thái bằng nhãn tiếng Việt (labelTrangThai), badge màu như chamcong.js.
+- web/js/api.js: thêm shorthand cho các action mới.
+- web/js/auth.js renderHeader: thêm link "Sửa chấm công" cho HR/Admin.
 
-B. CaRules.kiemTraNghiChuyenCa():
-   1. Ca trước ra 17:00, ca sau vào 07:00 hôm sau = 14h → ok: true
-   2. Ca trước ra 22:00, ca sau vào 06:00 hôm sau = 8h  → ok: false, thiếu 4h
-   3. Đúng 12h → ok: true (biên)
-
-C. CaRules.kiemTraNghiTuan():
-   1. Lịch T2–T7 liên tục, nghỉ CN = 24h → ok: true
-   2. Lịch T2–T7 ca đêm (17:00–07:00), khoảng giữa các ca <24h → ok: false
-
-D. QuyenRules.hasQuyen():
-   - NV có CHAM_CONG → true
-   - NV có QUAN_LY_NV → false
-   - HR có SUA_CHAM_CONG → true
-
-E. AuthApi — đăng nhập:
-   - POST {action:'login', email:'test@cscc.vn', matKhau:'sai'} → ok: false
-   - POST {action:'login', email:'test@cscc.vn', matKhau:'đúng'} → ok: true, có token
-   - Dùng token cũ hơn 8h → lỗi "Phiên đăng nhập hết hạn"
-   - Token giả mạo → lỗi "Token không hợp lệ"
-
-F. End-to-end qua API (cần Apps Script đã deploy):
-   - POST chamVao → ghi vào sheet ChamCong, gioVao = giờ máy chủ
-   - POST chamVao lần 2 → lỗi "Đã chấm công vào"
-   - POST chamRa → cập nhật gioRa, trạng thái đúng
-   - POST suaChamCong không có lyDo → lỗi "Phải nhập lý do"
-   - POST suaChamCong có lyDo → ghi AuditLog
-
-Viết hàm test đơn giản chạy trong Apps Script Editor (Logger.log để xem kết quả).
+Ràng buộc: TRE/SOM vẫn phải tính mất công cả ngày khi HR đổi giờ (gọi lại tinhTrangThaiCong
+nếu HR chỉ sửa giờ mà không chỉ định trangThai). Mọi sửa đổi ghi AuditLog kèm giá trị cũ→mới.
 ```
 
 ---
 
-## PROMPT-GĐ2-BACKEND — Đơn từ & Quy trình duyệt
+# PHASE 1 — GĐ2: Đơn từ & Quy trình duyệt nhiều cấp
+
+> Đọc trước: `docs/02-data-model.md` (DonTu, BuocDuyet), `docs/03-approval-workflow.md`.
+> Loại đơn: `Phép năm / Việc riêng / Không lương / OT / Công tác / Ra ngoài / Ốm đau / Chăm con ốm / Thai sản nữ / Thai sản nam / TNLĐ-BNN / Khám thai`.
+> `donViTinh`: `Ngày` | `Nửa ngày`. `nguonChiTra`: `Công ty` | `BHXH` | `Không lương`.
+
+## P1.1 — Backend: data + rules định tuyến duyệt
 
 ```
-Xây dựng Giai đoạn 2: Đơn từ + Quy trình duyệt nhiều cấp.
+[GĐ2] Backend tầng data + rules cho Đơn từ & Duyệt.
 
-Đọc docs/02-data-model.md (DonTu, BuocDuyet), docs/03-approval-workflow.md.
+1. data/DonTuData.gs — sheet DonTu (cột theo docs/02: maDon, maNV, loaiDon, donViTinh,
+   nguonChiTra, tuNgay, denNgay, soNgay, lyDo, dinhKem, trangThai, ngayTao):
+   - genMaDon(maNV)              → 'DON_NV001_20260621_xx'
+   - createDon(don)             → ghi 1 dòng, trangThai mặc định 'Chờ duyệt'
+   - getDonByMa(maDon)
+   - listDonCuaNV(maNV, filters) → đơn của 1 NV (filter loaiDon/trangThai/khoảng ngày)
+   - listDonChoDuyet()          → tất cả đơn trangThai 'Chờ duyệt' hoặc 'Bổ sung'
+   - updateDon(maDon, updates)
 
-Loại đơn (DonTu.loaiDon):
-  Phép năm / Việc riêng / Không lương / OT / Công tác / Ra ngoài /
-  Ốm đau / Chăm con ốm / Thai sản nữ / Thai sản nam / TNLĐ-BNN / Khám thai
+2. data/BuocDuyetData.gs — sheet BuocDuyet (maBuoc, maDon, capDuyet, nguoiDuyet, ketQua,
+   yKien, thoiDiem):
+   - genMaBuoc(maDon, cap)
+   - themBuocDuyet(buoc)        → thoiDiem = new Date()
+   - getBuocDuyetCuaDon(maDon)  → mảng các bước, sort theo capDuyet/thoiDiem
 
-Luồng duyệt theo docs/03:
-  - Phép ≤ nguong_duyet_cap_cao ngày → Cấp 1 → Cấp 2
-  - Phép > nguong_duyet_cap_cao ngày → Cấp 1 → 2 → 3
-  - Không lương → bắt buộc Cấp 3
-  - OT → Trưởng/Phó đơn vị (Cấp 2 trực tiếp)
-  - Công tác / Ra ngoài → Cấp 1
+3. rules/DuyetRules.gs — logic THUẦN, không truy cập Sheets:
+   - LOAI_DON (hằng), TRANG_THAI_DON (Chờ duyệt/Đã duyệt/Từ chối/Bổ sung/Thu hồi)
+   - capDuyetYeuCau(loaiDon, soNgay, nguongDuyetCapCao) → trả số cấp tối đa cần duyệt:
+       Phép năm/Việc riêng: soNgay <= nguong → 2 cấp; > nguong → 3 cấp
+       Không lương: luôn 3 cấp
+       OT: 1 cấp nhưng do Cấp 2 (Trưởng/Phó đơn vị) duyệt — đánh dấu duyetBoiCap2=true
+       Công tác/Ra ngoài: 1 cấp
+       Ốm/Chăm con ốm/Thai sản/TNLĐ/Khám thai: 1 cấp (Cấp 1) — chủ yếu ghi nhận + lưu chứng từ
+   - quyenChoCap(capDuyet) → trả quyền cần có: 1→DUYET_CAP1, 2→DUYET_CAP2, 3→DUYET_CAP3
+   - tinhTrangThaiSauBuoc(capHienTai, capToiDa, ketQua) →
+       ketQua 'Từ chối' → 'Từ chối' (kết thúc)
+       ketQua 'Yêu cầu bổ sung' → 'Bổ sung'
+       ketQua 'Duyệt' & capHienTai < capToiDa → vẫn 'Chờ duyệt' (chuyển cấp kế)
+       ketQua 'Duyệt' & capHienTai == capToiDa → 'Đã duyệt'
+   - tinhSoNgay(tuNgay, denNgay, donViTinh, danhSachNgayLe) → số ngày công (loại T7/CN + ngày lễ
+     cho đơn theo HC; donViTinh 'Nửa ngày' → 0.5). Trả number.
 
-Quy tắc bắt buộc:
-  - donViTinh: Ngày / Nửa ngày (ốm đau theo Luật BHXH 2024)
-  - Mỗi bước duyệt ghi vào BuocDuyet (nguoiDuyet, ketQua, yKien, thoiDiem)
-  - Khi đơn phép năm được duyệt cuối → trừ SoDuPhep (GĐ3 sẽ dùng lại)
-  - Khi đơn bị thu hồi sau duyệt → hoàn lại SoDuPhep
-  - Email thông báo (MailApp.sendEmail) cho từng bước duyệt
-
-Tạo:
-  - backend/data/DonTuData.gs
-  - backend/data/BuocDuyetData.gs
-  - backend/rules/DuyetRules.gs (định tuyến cấp duyệt)
-  - backend/api/DonTuApi.gs
-  Cập nhật Code.gs với routes mới.
+Tham số đọc từ CauHinh ở tầng api (truyền vào rules): nguong_duyet_cap_cao (mặc định 2),
+ngay_le_tet. Viết kèm vài Logger test nhỏ minh hoạ định tuyến để tự kiểm.
 ```
 
----
-
-## PROMPT-GĐ2-FRONTEND — Frontend Giai đoạn 2
+## P1.2 — Backend: API đơn từ + định tuyến người duyệt + thông báo
 
 ```
-Thêm trang đơn từ vào hệ thống Chấm công CSCC (Giai đoạn 2).
+[GĐ2] backend/api/DonTuApi.gs — orchestrate rules + data + phân quyền + email.
 
-Cần thêm:
-  web/don-tu.html     — tạo đơn + lịch sử đơn của NV
-  web/duyet-don.html  — danh sách đơn cần duyệt (Tổ trưởng / Trưởng đơn vị / BGD)
-  web/js/donton.js
-  web/js/duyetdon.js
+- apiTaoDon(user, body): validate (loaiDon hợp lệ, tuNgay<=denNgay, lyDo bắt buộc).
+  Tính soNgay = DuyetRules.tinhSoNgay(...). Với loaiDon='Phép năm': kiểm tra số dư phép
+  (GĐ3 sẽ nối; ở P1 chỉ cảnh báo nếu chưa có SoDuPhep, KHÔNG chặn). createDon. appendLog.
+  Gửi email cho người duyệt cấp 1 (= quanLyTrucTiep của NV). Trả {maDon}.
+- apiThuHoiDon(user, body {maDon}): chỉ người tạo, chỉ khi trangThai ∈ {Chờ duyệt, Bổ sung}.
+  set 'Thu hồi'. appendLog.
+- apiSuaDonBoSung(user, body): người tạo nộp lại đơn đang 'Bổ sung' → 'Chờ duyệt'.
+- apiDanhSachDonCuaToi(user, params): listDonCuaNV + gắn getBuocDuyetCuaDon mỗi đơn.
+- apiDonChoDuyet(user, params): trả các đơn mà 'user' là người duyệt cấp kế tiếp.
+  Xác định cấp kế tiếp: đếm số bước 'Duyệt' đã có → cap = soBuocDuyet+1. Lọc đơn theo:
+  user có quyenChoCap(cap) VÀ user là người quản lý phù hợp trong cây tổ chức
+  (cấp 1 = quanLyTrucTiep; cấp 2 = trưởng đơn vị của NV; cấp 3 = BGĐ). Dùng QuyenRules.canViewNV
+  để giới hạn phạm vi.
+- apiDuyetDon(user, body {maDon, ketQua, yKien}):
+  * Xác định capHienTai, capToiDa (DuyetRules.capDuyetYeuCau với CauHinh).
+  * requireQuyen(user, quyenChoCap(capHienTai)); kiểm tra user đúng người duyệt cấp này.
+  * themBuocDuyet({...}). trangThaiMoi = tinhTrangThaiSauBuoc(...). updateDon.
+  * Nếu 'Đã duyệt' và loaiDon='Phép năm' → gọi hook trừ phép (GĐ3: PhepRules/SoDuPhepData;
+    ở P1 để TODO có chú thích rõ, KHÔNG tự trừ nếu module GĐ3 chưa có).
+  * appendLog đầy đủ (Điều 28). Email cho người tạo + (nếu còn cấp) người duyệt cấp kế.
 
-Trang don-tu.html:
-  - Form tạo đơn: loại đơn (dropdown), từ ngày – đến ngày, đơn vị tính (Ngày/Nửa ngày), lý do, đính kèm
-  - Số ngày tự tính từ fromDate/toDate (trừ T7-CN nếu HC)
-  - Cảnh báo nếu số dư phép không đủ
-  - Bảng lịch sử đơn của mình (trạng thái + tiến độ duyệt)
-
-Trang duyet-don.html:
-  - Bảng đơn chờ duyệt của mình (filter theo trạng thái)
-  - Click mở modal: xem chi tiết đơn + lịch sử các bước đã duyệt
-  - Nút: Duyệt / Từ chối / Yêu cầu bổ sung (kèm ý kiến)
-
-Tuân thủ pattern đã có: Alpine.js x-data, apiGet/apiPost từ api.js, auth từ auth.js.
+Code.gs: thêm route POST taoDon, thuHoiDon, suaDonBoSung, duyetDon; GET danhSachDonCuaToi,
+donChoDuyet. Liệt kê các key CauHinh cần seed (nguong_duyet_cap_cao đã có).
 ```
 
----
-
-## PROMPT-GĐ3 — Quản lý phép & Bảng công
+## P1.3 — Frontend: trang tạo đơn + trang duyệt đơn
 
 ```
-Giai đoạn 3: Quản lý phép + Bảng công.
+[GĐ2] Frontend đơn từ. Theo đúng pattern Alpine có sẵn (x-data, Api.*, requireLogin, renderHeader).
 
-Đọc docs/00-srs.md Mục 6.3 và docs/02-data-model.md (SoDuPhep).
+A. web/don-tu.html + web/js/donton.js (mọi vai trò tạo đơn được, trừ Admin):
+- Form: loaiDon (dropdown 12 loại), tuNgay–denNgay, donViTinh (Ngày/Nửa ngày), lyDo, dinhKem (URL/ghi chú).
+- Tự tính soNgay khi đổi ngày/đơn vị tính (gọi 1 endpoint preview hoặc tính client đơn giản
+  loại T7/CN; số chính xác do backend chốt).
+- Với Phép năm: hiện số dư phép còn lại nếu API trả; cảnh báo vàng nếu vượt (không chặn ở GĐ2).
+- Bảng "Đơn của tôi": trạng thái + tiến độ duyệt (render các bước BuocDuyet: cấp, người, kết quả, ý kiến).
+- Nút "Thu hồi" khi đơn còn Chờ duyệt/Bổ sung; nút "Nộp lại" khi đang Bổ sung.
 
-Công thức quota phép (Điều 25, 26 NQLĐ):
-  quota = dieuKienBase + floor(thamNien / 5)
-  dieuKienBase: Bình thường = 12, Nặng nhọc = 14, Đặc biệt nặng nhọc = 16
-  Chưa đủ 12 tháng: quota = dieuKienBase * soThangLamViec / 12
+B. web/duyet-don.html + web/js/duyetdon.js (Tổ trưởng/Đơn vị/BGĐ):
+- Guard: user có DUYET_CAP1/2/3 bất kỳ.
+- Bảng đơn chờ duyệt của mình (gọi donChoDuyet). Filter theo loại đơn/đơn vị.
+- Click dòng → modal chi tiết: thông tin đơn + lịch sử các bước đã duyệt.
+- Nút Duyệt / Từ chối / Yêu cầu bổ sung + ô ý kiến (bắt buộc khi Từ chối/Bổ sung) → gọi duyetDon.
 
-Backend:
-  - backend/data/SoDuPhepData.gs
-  - backend/rules/PhepRules.gs (tinhQuota, kiemTraDuPhep)
-  - backend/api/BangCongApi.gs (bảng công tháng, khoá kỳ công)
-  Hàm tinhQuotaDauNam() chạy cron đầu năm (trigger thủ công).
-  Khoá bảng công: cột isLocked trong BangCong sheet; chỉ HR/Admin mở khoá + ghi AuditLog.
-
-Frontend:
-  web/bang-cong.html — bảng công tháng (NV xem của mình, HR/Admin xem theo đơn vị)
-  Xuất Excel (dùng Google Sheets API hoặc CSV download).
-  web/so-du-phep.html — số dư phép năm, lịch sử trừ phép.
+api.js: thêm shorthand taoDon, thuHoiDon, suaDonBoSung, danhSachDonCuaToi, donChoDuyet, duyetDon.
+auth.js renderHeader: thêm link "Đơn từ" (mọi NV) và "Duyệt đơn" (người có quyền duyệt).
 ```
 
----
-
-## PROMPT-GĐ4 — Cảnh báo kỷ luật & Quản trị
+## P1.N — Nghiệm thu GĐ2
 
 ```
-Giai đoạn 4: Cảnh báo kỷ luật + Quản trị hệ thống.
-
-Đọc docs/01-business-rules.md Mục 5 và docs/02-data-model.md (CanhBaoKyLuat).
-
-Ngưỡng kỷ luật (tất cả đọc từ CauHinh, KHÔNG hardcode):
-  3 ngày / 30 ngày  → Khiển trách
-  4 ngày / 30 ngày  → Kéo dài nâng lương ≤6 tháng
-  5 ngày / 30 ngày HOẶC 20 ngày / 365 ngày → Sa thải
-  Hệ thống CHỈ CẢNH BÁO, không tự ra quyết định kỷ luật.
-
-Thuật toán cửa sổ trượt:
-  Với mỗi NV, duyệt toàn bộ ChamCong có trangThai = TRE/SOM/MAT_CONG/VANG_KHONG_PHEP.
-  Đếm số ngày trong window 30 ngày từ ngày hiện tại trở về.
-  Đếm số ngày trong window 365 ngày.
-  So sánh với ngưỡng → sinh CanhBaoKyLuat nếu chạm ngưỡng.
-
-Backend:
-  - backend/rules/KyLuatRules.gs (demBoViec30, demBoViec365, kiemTraNguong)
-  - backend/api/KyLuatApi.gs (quetCanhBao, getCanhBao)
-  Trigger chạy hàng ngày: Time-driven trigger gọi quetCanhBaoTatCa().
-
-Frontend:
-  web/ky-luat.html — bảng cảnh báo (HR/Tổ trưởng/BGD), lọc theo đơn vị, mức cảnh báo.
-  web/quan-tri.html — Admin: quản lý CauHinh (sửa tham số), quản lý AuditLog.
+[GĐ2-TEST] Viết hàm test Apps Script (Logger.log) cho rules/DuyetRules.gs:
+- capDuyetYeuCau('Phép năm', 1, 2) → 2 cấp; ('Phép năm', 3, 2) → 3 cấp.
+- capDuyetYeuCau('Không lương', 1, 2) → 3 cấp (luôn cấp cao).
+- capDuyetYeuCau('OT', 5, 2) → duyệt bởi cấp 2.
+- tinhTrangThaiSauBuoc(1, 2, 'Duyệt') → 'Chờ duyệt'; (2,2,'Duyệt') → 'Đã duyệt';
+  (1,3,'Từ chối') → 'Từ chối'; (1,3,'Yêu cầu bổ sung') → 'Bổ sung'.
+- tinhSoNgay('2026-06-22','2026-06-26','Ngày', []) → 5 (T2–T6); donViTinh 'Nửa ngày' → 0.5.
+E2E (cần deploy): tạo đơn phép 3 ngày → duyệt cấp 1 → cấp 2 → cấp 3 → 'Đã duyệt';
+mỗi bước có BuocDuyet + AuditLog; thu hồi sau khi đã duyệt cuối → bị chặn.
 ```
 
 ---
 
-## PROMPT-DEBUG-AUTH — Gỡ lỗi xác thực
+# PHASE 2 — GĐ3: Quản lý phép & Bảng công tháng
+
+> Đọc trước: `docs/00-srs.md` Mục 6.3, `docs/02-data-model.md` (SoDuPhep).
+> Công thức quota (Điều 25, 26): `quota = base + ⌊thamNien/5⌋`, base = {Bình thường:12, Nặng nhọc:14, Đặc biệt nặng nhọc:16}. Chưa đủ 12 tháng: `quota = base * soThangLamViec / 12` (làm tròn 0.5).
+
+## P2.1 — Backend: quota phép + nối trừ phép vào luồng duyệt GĐ2
 
 ```
-Hệ thống Chấm công CSCC — Gỡ lỗi lỗi xác thực.
+[GĐ3] Quản lý số dư phép.
 
-Triệu chứng: [mô tả lỗi cụ thể]
+1. rules/PhepRules.gs (THUẦN):
+   - BASE_PHEP = {'Bình thường':12,'Nặng nhọc':14,'Đặc biệt nặng nhọc':16} — nhưng nhận
+     giá trị qua tham số/CauHinh, không hardcode trong logic tính.
+   - tinhQuota(dieuKienCV, ngayVaoLam, nam, baseMap) → áp công thức trên; xử lý tỷ lệ <12 tháng;
+     làm tròn xuống bội số 0.5.
+   - kiemTraDuPhep(soDuConLai, soNgayXin) → {du:boolean, thieu:number}.
 
-Luồng xác thực (email + mật khẩu, KHÔNG dùng GIS):
-1. Frontend: POST {action:'login', email, matKhau} → Content-Type: text/plain;charset=utf-8
-2. Backend (AuthApi.gs / apiLogin): hash SHA-256 matKhau → so sánh với cột matKhau trong NhanVien
-3. Nếu khớp → tạo HMAC token (payload = email|expires, ký bằng SESSION_SECRET)
-4. Frontend lưu token vào sessionStorage key 'cc_token'
-5. Mọi request sau: POST đặt 'token' trong body JSON; GET đặt 'token' trong query string
-6. Backend (verifyAndGetUser): giải mã token, kiểm tra chữ ký HMAC + hạn 8h + trangThai NV
+2. data/SoDuPhepData.gs — sheet SoDuPhep (maNV, nam, quota, daDung, conLai):
+   - getSoDu(maNV, nam), upsertSoDu(maNV, nam, {quota,daDung,conLai}),
+   - truPhep(maNV, nam, soNgay) → daDung += soNgay; conLai = quota - daDung; (không cho âm → throw).
+   - hoanPhep(maNV, nam, soNgay) → daDung -= soNgay; conLai cập nhật.
 
-File liên quan:
-- backend/api/AuthApi.gs — apiLogin(), verifyAndGetUser(), _verifyToken(), _hmac()
-- backend/data/NhanVienData.gs — getNVByEmail(), setMatKhauNV(), setPassword()
-- web/js/auth.js — login(), getToken(), logout(), requireLogin()
-- web/js/api.js — apiGet() / apiPost() (dùng getToken())
-- web/js/config.js — BACKEND_URL
+3. api/PhepApi.gs:
+   - apiTinhQuotaDauNam(user): requireQuyen QUAN_LY_PHEP; duyệt NV 'Đang làm', tính & upsert quota
+     năm hiện tại; appendLog. (Dùng được làm Time-trigger thủ công đầu năm.)
+   - apiGetSoDuPhep(user, params {maNV?, nam?}): NV xem của mình; HR/Admin xem theo đơn vị.
 
-Checklist gỡ lỗi:
-- Script Property SESSION_SECRET đã được đặt chưa?
-- NV có cột matKhau không? (chạy addMatKhauColumn() nếu thiếu)
-- setPassword('maNV', 'matkhau') đã chạy chưa?
-- Web App đã Deploy mới chưa sau khi sửa code?
-- Content-Type của POST có đúng 'text/plain;charset=utf-8' không?
+4. NỐI VÀO GĐ2: trong DonTuApi.apiDuyetDon, khi đơn 'Phép năm' chuyển 'Đã duyệt' →
+   truPhep(maNV, nam, soNgay) + appendLog. Trong apiThuHoiDon/khi huỷ đơn phép đã duyệt →
+   hoanPhep. Bỏ TODO đã để ở P1.2.
 
-Hãy kiểm tra và tìm nguyên nhân lỗi.
+Code.gs: route POST tinhQuotaDauNam; GET getSoDuPhep.
+```
+
+## P2.2 — Backend: bảng công tháng + khoá kỳ + xuất CSV
+
+```
+[GĐ3] Bảng công tháng.
+
+1. data/BangCongData.gs — bảng công sinh từ ChamCong + LichTruc (không nhất thiết lưu sheet
+   riêng; nếu cần khoá theo kỳ thì thêm sheet BangCong với cột thang, maNV, isLocked, nguoiKhoa,
+   thoiDiemKhoa):
+   - layBangCongThang(maNVList, thang 'yyyy-MM') → mảng {maNV, ngay, maCa, gioVao, gioRa,
+     trangThai, soGioLam} cho mọi ngày trong tháng (gọi getChamCongDonVi + getLichTrucDonVi,
+     tính soGioLam bằng ChamCongRules.tinhSoGioLam). Gắn tổng kết: ngày công, số TRE/SOM/MAT_CONG,
+     ngày VANG_PHEP, tổng giờ.
+   - kiemTraKhoa(thang, maNV), datKhoa/moKhoa(thang, maNV, nguoi, lyDo).
+
+2. api/BangCongApi.gs:
+   - apiGetBangCong(user, params {thang, donVi?, maNV?}): NV xem của mình; HR/Tổ trưởng/BGĐ
+     xem theo phạm vi (QuyenRules.canViewNV).
+   - apiKhoaKyCong(user, body {thang, donVi?}): requireQuyen KHOA_BANG_CONG; appendLog.
+   - apiMoKhoaKyCong(user, body {thang, maNV?, lyDo}): yêu cầu lyDo; appendLog.
+   - apiXuatBangCongCSV(user, params {thang, donVi?}): tạo CSV (Utilities) trả về chuỗi base64
+     hoặc dataURL để FE tải. Header tiếng Việt, encode UTF-8 có BOM để Excel mở đúng dấu.
+
+Code.gs: GET getBangCong, xuatBangCongCSV; POST khoaKyCong, moKhoaKyCong.
+```
+
+## P2.3 — Frontend: bảng công + số dư phép
+
+```
+[GĐ3] Frontend.
+
+A. web/bang-cong.html + web/js/bangcong.js:
+- Chọn tháng (mặc định tháng hiện tại). NV xem của mình; HR/Tổ trưởng/BGĐ chọn đơn vị/NV.
+- Lưới: hàng = NV (hoặc ngày), cột = ngày trong tháng, ô = badge trạng thái; cột tổng kết.
+- Nút "Khoá kỳ" / "Mở khoá" (chỉ HR/Admin), hiện trạng thái khoá.
+- Nút "Xuất Excel" → gọi xuatBangCongCSV, tải file .csv.
+
+B. web/so-du-phep.html + web/js/soduphep.js:
+- NV xem quota/đã dùng/còn lại năm hiện tại + lịch sử trừ phép (lọc DonTu loaiDon='Phép năm'
+  trangThai='Đã duyệt').
+- HR/Admin: bảng số dư toàn đơn vị + nút "Tính quota đầu năm" (gọi tinhQuotaDauNam).
+
+api.js + auth.js renderHeader: thêm link "Bảng công", "Số dư phép" theo quyền.
+```
+
+## P2.N — Nghiệm thu GĐ3
+
+```
+[GĐ3-TEST] Test rules/PhepRules.gs:
+- tinhQuota('Bình thường', '2010-01-01', 2026, base) → 12 + ⌊16/5⌋=3 → 15.
+- tinhQuota('Nặng nhọc', '2024-07-01', 2026, base) → 14 (đủ năm) + bonus.
+- NV vào 2026-04-01 (làm 9 tháng tính tới cuối năm) 'Bình thường' → 12*9/12 = 9.
+- kiemTraDuPhep(2, 3) → {du:false, thieu:1}.
+E2E: duyệt cuối đơn phép 2 ngày → SoDuPhep.daDung +2, conLai -2; thu hồi → hoàn lại.
+Bảng công tháng: 1 ngày TRE → soGioLam=0, đếm vào "mất công"; khoá kỳ → sửa chấm công bị chặn.
+```
+
+---
+
+# PHASE 3 — GĐ4: Cảnh báo kỷ luật & Quản trị
+
+> Đọc trước: `docs/01-business-rules.md` Mục 5, `docs/02-data-model.md` (CanhBaoKyLuat).
+> "Bỏ việc" = ChamCong.trangThai ∈ {TRE, SOM, MAT_CONG, VANG_KHONG_PHEP} → dùng `laBoViec()`.
+> Hệ thống **CHỈ CẢNH BÁO**, không tự ra quyết định kỷ luật.
+
+## P3.1 — Backend: cửa sổ trượt kỷ luật + quét tự động
+
+```
+[GĐ4] Cảnh báo kỷ luật.
+
+CauHinh (seed mới, KHÔNG hardcode):
+  nguong_ky_luat_30_khien = 3, nguong_ky_luat_30_keo = 4,
+  nguong_ky_luat_30_sa = 5, nguong_ky_luat_365_sa = 20.
+
+1. rules/KyLuatRules.gs (THUẦN):
+   - demBoViecTrongKhoang(danhSachChamCong) → đếm số ngày laBoViec=true (mỗi ngày tính 1).
+   - xacDinhMucCanhBao(soNgay30, soNgay365, nguong) → trả mức cao nhất chạm:
+       soNgay30 >= sa OR soNgay365 >= sa365 → 'Sa thải'
+       soNgay30 >= keo → 'Kéo dài nâng lương'
+       soNgay30 >= khien → 'Khiển trách'
+       else null.
+
+2. api/KyLuatApi.gs:
+   - quetCanhBaoMotNV(maNV): den=todayStr(); tu30=toDateStr(-30); tu365=toDateStr(-365);
+     đếm bỏ việc 2 cửa sổ (getChamCongKhoang), xacDinhMucCanhBao. Nếu chạm ngưỡng và CHƯA có
+     CanhBaoKyLuat cùng NV+mức trong ngày → ghi sheet CanhBaoKyLuat + appendLog.
+   - quetCanhBaoTatCa(): lặp NV 'Đang làm', gọi quetCanhBaoMotNV. Trả tổng số cảnh báo mới.
+     (Đăng ký Time-driven trigger everyDays(1) atHour(6) — hướng dẫn tạo trigger thủ công.)
+   - apiGetCanhBao(user, params {donVi?, mucCanhBao?}): requireQuyen XEM_CANH_BAO; lọc theo phạm vi.
+
+data/KyLuatData.gs (nếu tách): listCanhBao, themCanhBao, daCoCanhBaoTrongNgay(maNV, muc).
+
+Code.gs: POST quetCanhBao (chạy thủ công); GET getCanhBao.
+```
+
+## P3.2 — Backend: Quản trị (CauHinh + AuditLog)
+
+```
+[GĐ4] api/QuanTriApi.gs — Admin only (requireQuyen QUAN_TRI).
+- apiGetCauHinh(user): trả getAllConfig() (đã có route getCauHinh ở GĐ1 — kiểm tra, tránh trùng).
+- apiSetCauHinh(user, body {key, value, moTa}): setConfig + appendLog (giá trị cũ→mới).
+- apiGetAuditLog(user, params {tuNgay?, denNgay?, action?, maNV?}): đọc sheet AuditLog có phân
+  trang + lọc. Chỉ Admin/HR.
+Code.gs: POST setCauHinh; GET getAuditLog.
+```
+
+## P3.3 — Frontend: cảnh báo kỷ luật + quản trị
+
+```
+[GĐ4] Frontend.
+
+A. web/ky-luat.html + web/js/kyluat.js (HR/Tổ trưởng/Đơn vị/BGĐ):
+- Guard XEM_CANH_BAO. Bảng cảnh báo: NV, đơn vị, soNgayBoViec30/365, mucCanhBao (badge màu
+  tăng dần: vàng→cam→đỏ), thời điểm. Lọc theo đơn vị + mức. Nút "Quét lại" (nếu có quyền).
+- Ghi rõ dòng chú thích: "Hệ thống chỉ cảnh báo, không tự ra quyết định kỷ luật (Điều 33–35 NQLĐ)".
+
+B. web/quan-tri.html + web/js/quantri.js (Admin):
+- Tab CauHinh: bảng key/value/mô tả, sửa inline → setCauHinh (xác nhận trước khi lưu).
+- Tab AuditLog: bảng nhật ký có lọc theo ngày/action/NV, phân trang.
+
+api.js + auth.js renderHeader: link "Cảnh báo kỷ luật" (người có quyền), "Quản trị" (Admin).
+```
+
+## P3.N — Nghiệm thu GĐ4
+
+```
+[GĐ4-TEST] Test rules/KyLuatRules.gs:
+- demBoViecTrongKhoang: list 3 ngày TRE + 1 DU_CONG + 1 VANG_PHEP → 3.
+- xacDinhMucCanhBao(3,5,nguong) → 'Khiển trách'; (5,5,...) → 'Sa thải';
+  (2,20,...) → 'Sa thải' (chạm 365); (2,2,...) → null.
+E2E: tạo 3 ngày bỏ việc trong 30 ngày → quetCanhBaoMotNV sinh 'Khiển trách' + AuditLog;
+chạy lại cùng ngày → KHÔNG ghi trùng. Sửa CauHinh ngưỡng → quét lại đổi kết quả.
+```
+
+---
+
+# CÔNG CỤ XUYÊN SUỐT
+
+## DEPLOY / SETUP (khi cần lần đầu hoặc deploy lại)
+
+```
+Hướng dẫn deploy hệ thống Chấm công CSCC theo SETUP.md. Stack: Apps Script + GitHub Pages + Sheets.
+Auth: email + mật khẩu (SHA-256), session HMAC 8h ký bằng Script Property SESSION_SECRET.
+Các bước: (1) tạo Spreadsheet, điền SPREADSHEET_ID vào backend/data/SheetHelper.gs;
+(2) clasp push --force; (3) đặt Script Property SESSION_SECRET ≥32 ký tự;
+(4) chạy setupGD1() tạo sheet; (5) tạo Admin đầu tiên bằng createNV()+setPassword() trong Editor;
+(6) Deploy Web App (Execute as Me, Access Anyone) lấy URL;
+(7) copy web/js/config.example.js → config.js, điền BACKEND_URL;
+(8) bật GitHub Pages (branch main, thư mục /web).
+Sau khi thêm phase mới: chạy migration sheet tương ứng (tạo sheet DonTu/BuocDuyet/SoDuPhep/
+BangCong/CanhBaoKyLuat + seed CauHinh mới), rồi Deploy lại bản mới của Web App.
+Kiểm tra giúp tôi từng bước và xác nhận giá trị cần điền.
+```
+
+## GỠ LỖI XÁC THỰC
+
+```
+Gỡ lỗi xác thực Chấm công CSCC. Triệu chứng: [mô tả].
+Luồng: FE POST {action:'login',email,matKhau} (Content-Type text/plain) → AuthApi.apiLogin
+hash SHA-256 so với cột matKhau NhanVien → tạo HMAC token (email|expires, ký SESSION_SECRET)
+→ FE lưu sessionStorage cc_token → request sau gửi token (POST body / GET query) →
+verifyAndGetUser kiểm chữ ký + hạn 8h + trangThai NV.
+File: backend/api/AuthApi.gs, backend/data/NhanVienData.gs (setPassword/addMatKhauColumn),
+web/js/auth.js, web/js/api.js, web/js/config.js.
+Checklist: SESSION_SECRET đã đặt? cột matKhau có chưa (addMatKhauColumn)? setPassword đã chạy?
+Web App đã Deploy bản mới? Content-Type POST đúng text/plain? Tìm nguyên nhân và sửa.
+```
+
+## VIẾT TEST BUSINESS RULES (dùng lại mỗi phase)
+
+```
+Viết test cho rules/ của [tên phase]. Mọi hàm trong rules/ phải test được KHÔNG cần Sheets
+(logic thuần, nhận tham số). Viết hàm chayTest_<Module>() dùng Logger.log: in PASS/FAIL từng
+ca, tổng kết cuối. Bao quát ca biên (đúng ngưỡng, qua nửa đêm, làm tròn 0.5). Liệt kê ca lỗi.
+```
+
+---
+
+## GHI CHÚ QUAN TRỌNG KHI THỰC THI
+
+1. **Mỗi prompt chỉ làm đúng phạm vi của nó** — không tự ý nhảy phase, không refactor code GĐ1 đang chạy trừ khi prompt yêu cầu.
+2. **Sau mỗi phase**: chạy prompt `*-TEST`, rồi chạy migration sheet + Deploy lại Web App trước khi sang phase sau.
+3. **CauHinh là nguồn chân lý số liệu** — khi thêm tham số mới phải seed trong `setupGD1`/migration tương ứng và liệt kê cho người vận hành.
+4. **AuditLog không được bỏ sót** ở: chấm công sửa/khoá/mở, duyệt đơn (mọi bước), trừ/hoàn phép, khoá/mở kỳ công, sửa CauHinh, sinh cảnh báo kỷ luật.
+5. **Phân quyền chỉ qua `requireQuyen`** — nếu cần quyền mới (VD QUAN_LY_PHEP, KHOA_BANG_CONG, XEM_CANH_BAO, QUAN_TRI) phải khai báo trong `QUYEN_MAP`.
 ```

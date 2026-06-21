@@ -119,6 +119,11 @@ function _initCauHinhDefaults() {
     ['phep_co_ban_nang_nhoc',    '14',               'Phép năm cơ bản — nặng nhọc/độc hại'],
     ['phep_co_ban_dac_biet',     '16',               'Phép năm cơ bản — đặc biệt nặng nhọc'],
     ['ngay_cat_ky_cong',         '21',               'Ngày cắt kỳ công (kỳ = 21 tháng trước → 20 tháng này)'],
+    ['dang_nhap_toi_da',         '5',                'Số lần đăng nhập sai tối đa trước khi khoá tạm'],
+    ['dang_nhap_khoa_phut',      '15',               'Số phút khoá đăng nhập sau khi sai quá ngưỡng'],
+    ['ot_max_thang',             '40',               'Trần OT theo tháng (giờ)'],
+    ['ot_max_nam',               '200',              'Trần OT theo năm (giờ)'],
+    ['dinh_muc_viec_rieng',      '{"Kết hôn bản thân":3,"Con kết hôn":1,"Tang cha/mẹ/vợ/chồng/con":3,"Ông bà/anh chị em ruột mất":1}', 'Định mức nghỉ việc riêng (JSON: lý do→số ngày)'],
     ['ngay_le_tet',              '2026-01-01,2026-02-16,2026-02-17,2026-02-18,2026-02-19,2026-02-20,2026-04-26,2026-04-30,2026-05-01,2026-09-02,2026-09-03', 'Ngày nghỉ lễ/tết 2026 (yyyy-MM-dd, cách nhau dấu phẩy) — xác nhận theo thông báo chính thức'],
     ['timezone',                  'Asia/Ho_Chi_Minh', 'Múi giờ hệ thống'],
   ];

@@ -2,26 +2,29 @@
 
 const NV_SHEET   = 'NhanVien';
 const NV_HEADERS = ['maNV','hoTen','donVi','khoi','chucDanh','dieuKienCV',
-                    'ngayVaoLam','quanLyTrucTiep','trangThai','email','vaiTro','matKhau','salt'];
+                    'ngayVaoLam','quanLyTrucTiep','trangThai','email','vaiTro','matKhau','salt','phaiDoiMK'];
 
 // Số vòng lặp băm (chống brute-force). Chỉ chạy khi đăng nhập/đổi mật khẩu.
 const SALT_ITER = 1000;
 
+// NC-G: memo danh sách NV trong 1 execution (giảm đọc sheet lặp lại).
+let _nvMemo = null;
+function _allNV() {
+  if (!_nvMemo) _nvMemo = sheetToObjects(getSheet(NV_SHEET));
+  return _nvMemo;
+}
+function _resetNVMemo() { _nvMemo = null; }
+
 function getNVByEmail(email) {
-  const sh = getSheet(NV_SHEET);
-  const found = findRow(sh, 'email', email);
-  return found ? found.obj : null;
+  return _allNV().find(o => o.email === email) || null;
 }
 
 function getNVByMa(maNV) {
-  const sh = getSheet(NV_SHEET);
-  const found = findRow(sh, 'maNV', maNV);
-  return found ? found.obj : null;
+  return _allNV().find(o => o.maNV === maNV) || null;
 }
 
 function listNV(filters) {
-  const sh = getSheet(NV_SHEET);
-  let list = sheetToObjects(sh);
+  let list = _allNV().slice();
   if (!filters) return list;
   if (filters.trangThai) list = list.filter(o => o.trangThai === filters.trangThai);
   if (filters.donVi)     list = list.filter(o => o.donVi === filters.donVi);
@@ -37,6 +40,7 @@ function createNV(nv) {
   nv.trangThai = nv.trangThai || 'Đang làm';
   nv.vaiTro    = nv.vaiTro    || 'NV';
   appendRow(sh, nv, NV_HEADERS);
+  _resetNVMemo();
 }
 
 function updateNV(maNV, updates) {
@@ -48,15 +52,18 @@ function updateNV(maNV, updates) {
   delete updates.maNV;
   Object.assign(found.obj, updates);
   updateRow(sh, found.row, found.obj, NV_HEADERS);
+  _resetNVMemo();
 }
 
-// Thêm cột matKhau + salt vào sheet NhanVien nếu chưa có (migration, an toàn gọi nhiều lần)
+// Thêm cột matKhau + salt + phaiDoiMK vào sheet NhanVien nếu chưa có (migration an toàn).
 function addMatKhauColumn() {
   const sh = getSheet(NV_SHEET);
-  let headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
-  if (!headers.includes('matKhau')) { sh.getRange(1, headers.length + 1).setValue('matKhau'); }
-  headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
-  if (!headers.includes('salt'))    { sh.getRange(1, headers.length + 1).setValue('salt'); }
+  let added = false;
+  ['matKhau', 'salt', 'phaiDoiMK'].forEach(col => {
+    const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+    if (headers.indexOf(col) === -1) { sh.getRange(1, headers.length + 1).setValue(col); added = true; }
+  });
+  if (added) _resetNVMemo();
 }
 function addSaltColumn() { addMatKhauColumn(); }   // alias
 
@@ -73,7 +80,8 @@ function _hashSalted(raw, salt) {
 }
 
 // Đặt mật khẩu (sinh salt mới + băm + lưu). Nguồn chân lý duy nhất để ghi mật khẩu.
-function datMatKhau(maNV, matKhauRaw) {
+// batBuocDoi=true (mặc định): đánh dấu phaiDoiMK (Admin/import/reset đặt). User tự đổi → false.
+function datMatKhau(maNV, matKhauRaw, batBuocDoi) {
   addMatKhauColumn();
   const salt = _genSalt();
   const hash = _hashSalted(matKhauRaw, salt);
@@ -82,7 +90,9 @@ function datMatKhau(maNV, matKhauRaw) {
   if (!found) throw new Error('Không tìm thấy NV: ' + maNV);
   found.obj.matKhau = hash;
   found.obj.salt = salt;
+  found.obj.phaiDoiMK = (batBuocDoi === false) ? '' : 'TRUE';
   updateRow(sh, found.row, found.obj, NV_HEADERS);
+  _resetNVMemo();
 }
 
 // Kiểm tra mật khẩu. Tự NÂNG CẤP bản ghi cũ (hash không salt) sang salted khi đăng nhập đúng.

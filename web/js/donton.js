@@ -15,6 +15,7 @@ function donTuApp() {
     errorMsg:   '',
     successMsg: '',
     canhBao:    '',
+    dinhMucList: [],   // NC-D: [{ly, ngay}] định mức việc riêng
 
     // Form tạo / sửa-bổ-sung
     showModal: false,
@@ -24,8 +25,18 @@ function donTuApp() {
     async init() {
       if (!requireLogin('index.html')) return;
       renderHeader('dontu');
+      await this.loadDinhMuc();
       await this.load();
       this.loading = false;
+    },
+
+    async loadDinhMuc() {
+      try {
+        const r = await Api.getCauHinh();
+        const row = (r.data || []).find(c => c.key === 'dinh_muc_viec_rieng');
+        const obj = row ? JSON.parse(row.value || '{}') : {};
+        this.dinhMucList = Object.keys(obj).map(ly => ({ ly: ly, ngay: obj[ly] }));
+      } catch (_) { this.dinhMucList = []; }
     },
 
     async load() {
@@ -88,6 +99,8 @@ function donTuApp() {
           lyDo: this.form.lyDo.trim(),
           dinhKem: this.form.dinhKem
         };
+        if (this.form.loaiDon === 'OT') payload.soGio = this.form.soGio;
+        if (this.form.loaiDon === 'Việc riêng') payload.lyDoDinhMuc = this.form.lyDoDinhMuc;
         let r;
         if (this.isBoSung) {
           payload.maDon = this.form.maDon;
@@ -141,5 +154,5 @@ function donTuApp() {
 }
 
 function _emptyDon() {
-  return { maDon: '', loaiDon: '', donViTinh: 'Ngày', tuNgay: '', denNgay: '', lyDo: '', dinhKem: '' };
+  return { maDon: '', loaiDon: '', donViTinh: 'Ngày', tuNgay: '', denNgay: '', lyDo: '', dinhKem: '', soGio: '', lyDoDinhMuc: '' };
 }

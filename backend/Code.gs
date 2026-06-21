@@ -50,6 +50,8 @@ function _routeGet(action, user, params) {
     case 'danhSachDonCuaToi':    return apiDanhSachDonCuaToi(user, params);
     case 'donChoDuyet':          return apiDonChoDuyet(user, params);
     case 'getDonChiTiet':        return apiGetDonChiTiet(user, params);
+    case 'getThongBao':          return apiGetThongBao(user, params);
+    case 'getDashboard':         return apiGetDashboard(user, params);
     case 'getSoDuPhep':          return apiGetSoDuPhep(user, params);
     case 'getBangCong':          return apiGetBangCong(user, params);
     case 'xuatBangCong':         return apiXuatBangCong(user, params);
@@ -81,6 +83,7 @@ function _routePost(action, user, body) {
     case 'thuHoiDon':        return apiThuHoiDon(user, body);
     case 'suaDonBoSung':     return apiSuaDonBoSung(user, body);
     case 'duyetDon':         return apiDuyetDon(user, body);
+    case 'danhDauThongBao':  return apiDanhDauThongBao(user, body);
     case 'tinhQuotaDauNam':  return apiTinhQuotaDauNam(user, body);
     case 'khoaKyCong':       return apiKhoaKyCong(user, body);
     case 'moKhoaKyCong':     return apiMoKhoaKyCong(user, body);

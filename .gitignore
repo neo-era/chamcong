@@ -15,8 +15,9 @@ build/
 credentials.json
 *.key
 
-# Frontend config (chứa Client ID thật — KHÔNG commit)
-web/js/config.js
+# Frontend config: ĐƯỢC commit để GitHub Pages có BACKEND_URL.
+# (Backend yêu cầu token cho mọi action trừ login — URL không phải bí mật tuyệt đối.)
+# web/js/config.js
 
 # Editor
 .vscode/

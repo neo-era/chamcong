@@ -90,7 +90,7 @@ function setupGD1() {
   getOrCreateSheet('NhanVien',  ['maNV','hoTen','donVi','khoi','chucDanh','dieuKienCV','ngayVaoLam','quanLyTrucTiep','trangThai','email','vaiTro']);
   getOrCreateSheet('Ca',        ['maCa','tenCa','gioBatDau','gioKetThuc','banDem']);
   getOrCreateSheet('LichTruc',  ['maLT','maNV','ngay','maCa']);
-  getOrCreateSheet('ChamCong',  ['maCC','maNV','ngay','maCa','gioVao','gioRa','nguon','toaDo','trangThai','isLocked']);
+  getOrCreateSheet('ChamCong',  ['maCC','maNV','ngay','maCa','gioVao','gioRa','nguon','toaDo','trangThai','isLocked','soGioCong']);
   getOrCreateSheet('CauHinh',   ['key','value','moTa']);
   getOrCreateSheet('AuditLog',  ['maLog','thoiDiem','maNV','email','action','doiTuong','chiTiet']);
 

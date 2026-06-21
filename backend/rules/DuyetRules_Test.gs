@@ -10,17 +10,15 @@ function chayTest_DuyetRules() {
     else { fail++; Logger.log('FAIL · ' + ten + ' → ' + a + ' (kỳ vọng ' + b + ')'); }
   }
 
-  // ── capDuyetYeuCau (ngưỡng cấp cao = 2) ──────────────────────────────────────
-  eq('Phép năm 1 ngày → 2 cấp',  capDuyetYeuCau('Phép năm', 1, 2), ['DUYET_CAP1','DUYET_CAP2']);
-  eq('Phép năm 2 ngày → 2 cấp',  capDuyetYeuCau('Phép năm', 2, 2), ['DUYET_CAP1','DUYET_CAP2']);
-  eq('Phép năm 3 ngày → 3 cấp',  capDuyetYeuCau('Phép năm', 3, 2), ['DUYET_CAP1','DUYET_CAP2','DUYET_CAP3']);
-  eq('Việc riêng 5 ngày → 3 cấp',capDuyetYeuCau('Việc riêng', 5, 2), ['DUYET_CAP1','DUYET_CAP2','DUYET_CAP3']);
-  eq('Không lương → luôn 3 cấp', capDuyetYeuCau('Không lương', 1, 2), ['DUYET_CAP1','DUYET_CAP2','DUYET_CAP3']);
-  eq('OT → cấp 2 trực tiếp',     capDuyetYeuCau('OT', 5, 2), ['DUYET_CAP2']);
-  eq('Công tác → 1 cấp',         capDuyetYeuCau('Công tác', 1, 2), ['DUYET_CAP1']);
-  eq('Ra ngoài → 1 cấp',         capDuyetYeuCau('Ra ngoài', 1, 2), ['DUYET_CAP1']);
-  eq('Ốm đau → cấp 1 ghi nhận',  capDuyetYeuCau('Ốm đau', 1, 2), ['DUYET_CAP1']);
-  eq('Thai sản nam → cấp 1',     capDuyetYeuCau('Thai sản nam', 1, 2), ['DUYET_CAP1']);
+  // ── capDuyetYeuCau: BS2 — MỌI loại đơn đủ 3 cấp ──────────────────────────────
+  const BA = ['DUYET_CAP1','DUYET_CAP2','DUYET_CAP3'];
+  eq('Phép năm 1 ngày → 3 cấp',  capDuyetYeuCau('Phép năm', 1, 2), BA);
+  eq('Phép năm 3 ngày → 3 cấp',  capDuyetYeuCau('Phép năm', 3, 2), BA);
+  eq('Không lương → 3 cấp',      capDuyetYeuCau('Không lương', 1, 2), BA);
+  eq('OT → 3 cấp',               capDuyetYeuCau('OT', 5, 2), BA);
+  eq('Công tác → 3 cấp',         capDuyetYeuCau('Công tác', 1, 2), BA);
+  eq('Ra ngoài → 3 cấp',         capDuyetYeuCau('Ra ngoài', 1, 2), BA);
+  eq('Ốm đau → 3 cấp',           capDuyetYeuCau('Ốm đau', 1, 2), BA);
 
   // ── quyenChoCap ──────────────────────────────────────────────────────────────
   const yc = ['DUYET_CAP1','DUYET_CAP2','DUYET_CAP3'];

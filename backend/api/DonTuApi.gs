@@ -40,6 +40,19 @@ function _guiMail(to, subject, body) {
   try { if (to) MailApp.sendEmail(to, subject, body); } catch (_) { /* không chặn luồng nếu mail lỗi */ }
 }
 
+// Map maNV → hoTen (đọc NhanVien 1 lần cho mỗi request)
+function _tenMap() {
+  const m = {};
+  listNV().forEach(n => { m[n.maNV] = n.hoTen; });
+  return m;
+}
+
+// Gắn tên người duyệt vào từng bước (nguoiDuyetTen)
+function _ganTenBuoc(buocList, tenMap) {
+  return (buocList || []).map(b =>
+    Object.assign({}, b, { nguoiDuyetTen: tenMap[b.nguoiDuyet] || b.nguoiDuyet }));
+}
+
 // Tìm email người duyệt kế tiếp (theo cấp) để thông báo
 function _emailNguoiDuyetKeTiep(don) {
   const tt = _thongTinDuyet(don);
@@ -162,7 +175,27 @@ function apiDanhSachDonCuaToi(user, params) {
   if (params.trangThai) filters.trangThai = params.trangThai;
   const ds = listDonCuaNV(user.maNV, filters)
     .sort((a, b) => String(b.ngayTao).localeCompare(String(a.ngayTao)));
-  return { ok: true, data: ds.map(d => Object.assign({}, d, { buoc: getBuocDuyetCuaDon(d.maDon) })) };
+  const tenMap = _tenMap();
+  return { ok: true, data: ds.map(d => Object.assign({}, d, { buoc: _ganTenBuoc(getBuocDuyetCuaDon(d.maDon), tenMap) })) };
+}
+
+// GET action=getDonChiTiet&maDon=... — chi tiết 1 đơn để IN (người tạo hoặc người có quyền xem)
+function apiGetDonChiTiet(user, params) {
+  const don = getDonByMa(params.maDon);
+  if (!don) throw new Error('Không tìm thấy đơn: ' + params.maDon);
+  if (don.maNV !== user.maNV && !canViewNV(user, don.maNV)) {
+    throw new Error('Không có quyền xem đơn này');
+  }
+  const nv = getNVByMa(don.maNV) || {};
+  const tenMap = _tenMap();
+  return { ok: true, data: Object.assign({}, don, {
+    hoTenNV:   nv.hoTen,
+    donViNV:   nv.donVi,
+    chucDanhNV: nv.chucDanh,
+    buoc:      _ganTenBuoc(getBuocDuyetCuaDon(don.maDon), tenMap),
+    donVi1:    getConfig('don_vi_cap1') || 'CÔNG TY CỔ PHẦN CHIẾU SÁNG CÔNG CỘNG TP.HCM',
+    donVi2:    getConfig('don_vi_cap2') || 'CHIẾU SÁNG KHU VỰC TRUNG TÂM'
+  }) };
 }
 
 // GET action=donChoDuyet — các đơn mà `user` là người duyệt cấp kế tiếp
@@ -171,6 +204,7 @@ function apiDonChoDuyet(user, params) {
     throw new Error('Vai trò không có quyền duyệt đơn');
   }
   const ketQua = [];
+  const tenMap = _tenMap();
   listDonChoDuyet().forEach(don => {
     const nv = getNVByMa(don.maNV);
     if (!nv) return;
@@ -181,7 +215,7 @@ function apiDonChoDuyet(user, params) {
     ketQua.push(Object.assign({}, don, {
       hoTenNV: nv.hoTen, donViNV: nv.donVi,
       capHienTai: tt.capHienTai, capToiDa: tt.capToiDa,
-      buoc: tt.buoc
+      buoc: _ganTenBuoc(tt.buoc, tenMap)
     }));
   });
   ketQua.sort((a, b) => String(a.ngayTao).localeCompare(String(b.ngayTao)));

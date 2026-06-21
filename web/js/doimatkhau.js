@@ -25,8 +25,13 @@ function doiMatKhauApp() {
       this.submitting = true;
       try {
         await Api.doiMatKhau({ matKhauCu: this.matKhauCu, matKhauMoi: this.matKhauMoi });
-        this.successMsg = 'Đã đổi mật khẩu thành công. Lần đăng nhập sau dùng mật khẩu mới.';
+        this.successMsg = 'Đã đổi mật khẩu thành công.';
         this.matKhauCu = ''; this.matKhauMoi = ''; this.xacNhan = '';
+        // NC-A: xoá cờ ép đổi + về trang chấm công
+        try {
+          const u = getCurrentUser(); if (u) { u.phaiDoiMK = ''; sessionStorage.setItem('cc_user', JSON.stringify(u)); }
+        } catch (_) {}
+        setTimeout(() => { location.href = 'chamcong.html'; }, 1200);
       } catch (e) { this.errorMsg = e.message; }
       finally { this.submitting = false; }
     }

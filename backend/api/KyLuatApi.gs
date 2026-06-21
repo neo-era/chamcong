@@ -30,6 +30,12 @@ function quetCanhBaoMotNV(maNV) {
 
   const cb = themCanhBao({ maNV, soNgayBoViec30: s30, soNgayBoViec365: s365, mucCanhBao: muc });
   appendLog('SYSTEM', '', 'SINH_CANH_BAO', 'CanhBaoKyLuat', { maNV, mucCanhBao: muc, s30, s365 });
+
+  // NC-E: thông báo cho HR/Admin
+  if (typeof themThongBao === 'function') {
+    listNV({ trangThai: 'Đang làm' }).filter(n => ['HR', 'Admin'].includes(n.vaiTro))
+      .forEach(n => themThongBao(n.maNV, 'Cảnh báo kỷ luật: ' + maNV + ' — ' + muc, 'ky-luat.html'));
+  }
   return cb;
 }
 

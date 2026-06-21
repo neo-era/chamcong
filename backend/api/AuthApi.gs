@@ -15,16 +15,32 @@ function _getSecret() {
 function apiLogin(body) {
   const { email, matKhau } = body;
   if (!email || !matKhau) throw new Error('Vui lòng nhập email và mật khẩu');
+  const em = email.trim().toLowerCase();
 
-  const nv = getNVByEmail(email.trim().toLowerCase());
-  if (!nv) throw new Error('Email không tồn tại trong hệ thống');
+  // NC-B: chống dò mật khẩu — khoá tạm sau N lần sai
+  const cache    = CacheService.getScriptCache();
+  const keyFail  = 'login_fail_' + em;
+  const max      = getConfigNumber('dang_nhap_toi_da', 5);
+  const khoaPhut = getConfigNumber('dang_nhap_khoa_phut', 15);
+  const soSai    = Number(cache.get(keyFail)) || 0;
+  if (soSai >= max) {
+    throw new Error('Tài khoản tạm khoá do nhập sai nhiều lần. Thử lại sau ' + khoaPhut + ' phút.');
+  }
+  const nv = getNVByEmail(em);
+  function ghiSai(msg) {
+    cache.put(keyFail, String(soSai + 1), khoaPhut * 60);
+    if (soSai + 1 >= max) appendLog(nv ? nv.maNV : '', em, 'KHOA_DANG_NHAP', 'Auth', { soSai: soSai + 1 });
+    throw new Error(msg);
+  }
+
+  if (!nv) ghiSai('Email không tồn tại trong hệ thống');
   if (nv.trangThai === 'Nghỉ việc') throw new Error('Tài khoản đã bị vô hiệu hoá');
   if (!nv.matKhau) throw new Error('Tài khoản chưa được cấp mật khẩu. Liên hệ Admin/HR.');
+  if (!kiemTraMatKhau(nv, matKhau)) ghiSai('Mật khẩu không đúng');
 
-  if (!kiemTraMatKhau(nv, matKhau)) throw new Error('Mật khẩu không đúng');
-
+  cache.remove(keyFail);
   const token = _createToken(nv.email);
-  appendLog(nv.maNV, nv.email, 'DANG_NHAP', 'Auth', { ip: '' });
+  appendLog(nv.maNV, nv.email, 'DANG_NHAP', 'Auth', {});
 
   return {
     ok: true,
@@ -35,7 +51,8 @@ function apiLogin(body) {
       email:    nv.email,
       vaiTro:   nv.vaiTro,
       donVi:    nv.donVi,
-      chucDanh: nv.chucDanh
+      chucDanh: nv.chucDanh,
+      phaiDoiMK: nv.phaiDoiMK || ''     // NC-A: ép đổi mật khẩu lần đầu
     }
   };
 }
@@ -55,7 +72,7 @@ function apiDoiMatKhau(user, body) {
   const nv = getNVByMa(user.maNV);
   if (!kiemTraMatKhau(nv, matKhauCu)) throw new Error('Mật khẩu cũ không đúng');
 
-  datMatKhau(user.maNV, matKhauMoi);
+  datMatKhau(user.maNV, matKhauMoi, false);   // NC-A: xoá cờ phaiDoiMK sau khi user tự đổi
   appendLog(user.maNV, user.email, 'DOI_MAT_KHAU', 'Auth', {});
   return { ok: true, message: 'Đã đổi mật khẩu thành công' };
 }

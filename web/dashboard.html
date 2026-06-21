@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tổng quan — CSCC</title>
+  <link rel="stylesheet" href="css/main.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <style>
+    .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:.75rem; }
+    .kpi { background:#fff; border-radius:.6rem; padding:1rem; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+    .kpi .num { font-size:1.7rem; font-weight:800; line-height:1; }
+    .kpi .lbl { font-size:.8rem; color:var(--gray-6); margin-top:.35rem; }
+  </style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="logo">⚡ CSCC Tổng quan</div>
+  <div class="user-info">
+    <nav class="nav-links hide-mobile">
+      <a href="chamcong.html" data-page="chamcong">Chấm công</a>
+      <a href="huongdan.html" data-page="huongdan">Hướng dẫn</a>
+      <a href="dashboard.html" data-page="dashboard" data-roles="ToTruong,TruongDonVi,BGD,HR,Admin">Tổng quan</a>
+      <a href="don-tu.html"   data-page="dontu">Đơn từ</a>
+      <a href="duyet-don.html" data-page="duyetdon" data-roles="ToTruong,TruongDonVi,BGD,Admin">Duyệt đơn</a>
+      <a href="bang-cong.html" data-page="bangcong">Bảng công</a>
+      <a href="so-du-phep.html" data-page="soduphep">Số dư phép</a>
+      <a href="ky-luat.html" data-page="kyluat" data-roles="ToTruong,TruongDonVi,BGD,HR,Admin">Cảnh báo KL</a>
+      <a href="phanca.html"   data-page="phanca"   data-roles="ToTruong,TruongDonVi,HR,Admin,BGD">Phân ca</a>
+      <a href="nhanvien.html" data-page="nhanvien" data-roles="HR,Admin">Nhân viên</a>
+      <a href="sua-cham-cong.html" data-page="suachamcong" data-roles="HR,Admin">Sửa chấm công</a>
+      <a href="quan-tri.html" data-page="quantri" data-roles="Admin">Quản trị</a>
+    </nav>
+    <span id="header-name">—</span>
+    <span id="header-role" style="opacity:.7;font-size:.8rem;"></span>
+    <button class="btn btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3);padding:.3rem .7rem;font-size:.8rem;"
+            onclick="logout()">Đăng xuất</button>
+  </div>
+</header>
+
+<div class="container-wide" x-data="dashboardApp()" x-init="init()">
+
+  <div x-show="errorMsg" class="alert alert-error" x-text="errorMsg"></div>
+
+  <div class="card" style="padding:1rem;display:flex;gap:.75rem;align-items:flex-end;flex-wrap:wrap;">
+    <div class="form-group" style="margin:0;">
+      <label class="form-label">Kỳ</label>
+      <input class="form-control" type="month" x-model="ky" @change="load()">
+    </div>
+    <span x-show="data" style="font-size:.85rem;color:var(--gray-6);align-self:center;">
+      Kỳ <strong x-text="data && data.ky"></strong> ·
+      <span x-text="data && (fmtNgay(data.tuNgay) + ' → ' + fmtNgay(data.denNgay))"></span> ·
+      <span x-text="data && data.soNV"></span> NV
+    </span>
+  </div>
+
+  <div x-show="loading" style="text-align:center;padding:2rem;">
+    <div class="spinner spinner-dark" style="width:2rem;height:2rem;margin:0 auto;"></div>
+  </div>
+
+  <div x-show="!loading && data">
+    <div class="kpi-grid" style="margin-bottom:1rem;">
+      <div class="kpi"><div class="num" style="color:var(--orange)" x-text="data && data.diTre"></div><div class="lbl">Đi trễ</div></div>
+      <div class="kpi"><div class="num" style="color:var(--orange)" x-text="data && data.veSom"></div><div class="lbl">Về sớm</div></div>
+      <div class="kpi"><div class="num" style="color:var(--red)" x-text="data && data.matCong"></div><div class="lbl">Mất công</div></div>
+      <div class="kpi"><div class="num" style="color:var(--red)" x-text="data && data.vangKhongPhep"></div><div class="lbl">Vắng không phép</div></div>
+      <div class="kpi"><div class="num" style="color:var(--blue)" x-text="data && data.tongPhep"></div><div class="lbl">Ngày phép (kỳ)</div></div>
+      <div class="kpi"><div class="num" style="color:var(--blue)" x-text="data && data.tongOT"></div><div class="lbl">Giờ OT (kỳ)</div></div>
+      <div class="kpi"><div class="num" style="color:var(--green)" x-text="data && data.tongGioCong"></div><div class="lbl">Tổng giờ công (trực tiếp)</div></div>
+    </div>
+
+    <div class="card" style="padding:0;">
+      <div style="padding:.75rem 1rem;font-weight:700;border-bottom:1px solid var(--gray-3);">Đang nghỉ hôm nay (<span x-text="data && data.dangNghi.length"></span>)</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Nhân viên</th><th>Loại nghỉ</th><th>Từ → đến</th></tr></thead>
+          <tbody>
+            <template x-for="d in (data ? data.dangNghi : [])" :key="d.maNV + d.tuNgay">
+              <tr>
+                <td x-text="d.hoTen + ' (' + d.maNV + ')'"></td>
+                <td x-text="d.loaiDon"></td>
+                <td x-text="fmtNgay(d.tuNgay) + ' → ' + fmtNgay(d.denNgay)"></td>
+              </tr>
+            </template>
+            <tr x-show="data && !data.dangNghi.length"><td colspan="3" style="text-align:center;padding:1.5rem;color:var(--gray-5);">Không ai nghỉ hôm nay</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>

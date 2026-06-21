@@ -54,6 +54,11 @@ function renderHeader(activePage) {
   const user = getCurrentUser();
   if (!user) return;
 
+  // NC-A: ép đổi mật khẩu lần đầu (mật khẩu mặc định)
+  if (user.phaiDoiMK && !location.pathname.endsWith('doi-mat-khau.html')) {
+    location.href = 'doi-mat-khau.html'; return;
+  }
+
   const nameEl = document.getElementById('header-name');
   const roleEl = document.getElementById('header-role');
   if (nameEl) {
@@ -88,6 +93,53 @@ function renderHeader(activePage) {
   if (['ToTruong', 'TruongDonVi', 'BGD', 'Admin'].includes(vaiTro) && activePage !== 'duyetdon') {
     _capNhatBadgeDuyet();
   }
+
+  _setupThongBao();
+}
+
+// NC-E: chuông thông báo trên header
+async function _setupThongBao() {
+  if (typeof Api === 'undefined' || !Api.getThongBao) return;
+  const userInfo = document.querySelector('.app-header .user-info');
+  if (!userInfo || document.querySelector('.tb-bell')) return;
+
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:relative;';
+  wrap.innerHTML =
+    '<button class="tb-bell" type="button" aria-label="Thông báo" style="background:none;border:none;color:#fff;font-size:1.2rem;cursor:pointer;position:relative;padding:0 .3rem;">🔔' +
+    '<span class="tb-count" style="display:none;position:absolute;top:-2px;right:-2px;background:#ef4444;color:#fff;border-radius:999px;font-size:.6rem;line-height:1;padding:2px 4px;font-weight:700;"></span></button>' +
+    '<div class="tb-drop" style="display:none;position:absolute;top:130%;right:0;width:300px;max-height:380px;overflow:auto;background:#fff;color:#111;border-radius:.5rem;box-shadow:0 12px 32px rgba(0,0,0,.3);z-index:500;"></div>';
+  userInfo.insertBefore(wrap, userInfo.firstChild);
+
+  const bell = wrap.querySelector('.tb-bell');
+  const drop = wrap.querySelector('.tb-drop');
+  const countEl = wrap.querySelector('.tb-count');
+
+  function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+  function fmt(iso) { try { return new Date(iso).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }); } catch (_) { return ''; } }
+  function render(items) {
+    if (!items.length) return '<div style="padding:1rem;color:#666;font-size:.85rem;text-align:center;">Không có thông báo</div>';
+    const head = '<div style="display:flex;justify-content:space-between;padding:.5rem .75rem;border-bottom:1px solid #eee;font-size:.8rem;"><b>Thông báo</b><a href="#" class="tb-readall" style="color:#1a56db;">Đã đọc hết</a></div>';
+    return head + items.map(it =>
+      '<a href="' + (it.link || '#') + '" style="display:block;padding:.55rem .75rem;border-bottom:1px solid #f1f1f1;font-size:.82rem;color:#111;' +
+      (it.daDoc ? '' : 'background:#eff6ff;font-weight:600;') + '">' + esc(it.noiDung) +
+      '<div style="font-size:.7rem;color:#888;font-weight:400;">' + fmt(it.thoiDiem) + '</div></a>'
+    ).join('');
+  }
+  async function load() {
+    try {
+      const r = await Api.getThongBao();
+      const n = (r.data && r.data.soChuaDoc) || 0;
+      countEl.textContent = n; countEl.style.display = n > 0 ? '' : 'none';
+      drop.innerHTML = render((r.data && r.data.items) || []);
+    } catch (_) {}
+  }
+  bell.addEventListener('click', (e) => { e.stopPropagation(); drop.style.display = drop.style.display === 'none' ? 'block' : 'none'; });
+  document.addEventListener('click', () => { drop.style.display = 'none'; });
+  drop.addEventListener('click', (e) => {
+    if (e.target.classList.contains('tb-readall')) { e.preventDefault(); Api.danhDauThongBao({}).then(load); }
+  });
+  load();
 }
 
 async function _capNhatBadgeDuyet() {

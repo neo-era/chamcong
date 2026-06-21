@@ -53,6 +53,24 @@ function _ganTenBuoc(buocList, tenMap) {
     Object.assign({}, b, { nguoiDuyetTen: tenMap[b.nguoiDuyet] || b.nguoiDuyet }));
 }
 
+// NC-C: tổng giờ OT đã duyệt của NV trong tháng / năm (bỏ qua 1 đơn nếu cần)
+function _tongOtThang(maNV, nam, thang, maDonBoQua) {
+  const thangStr = nam + '-' + ('0' + thang).slice(-2);
+  const ds = listDonCuaNV(maNV, { loaiDon: 'OT', trangThai: 'Đã duyệt' })
+    .filter(d => d.maDon !== maDonBoQua && toDateStr(d.tuNgay).substring(0, 7) === thangStr);
+  return tongOtGio(ds);
+}
+function _tongOtNam(maNV, nam, maDonBoQua) {
+  const ds = listDonCuaNV(maNV, { loaiDon: 'OT', trangThai: 'Đã duyệt' })
+    .filter(d => d.maDon !== maDonBoQua && toDateStr(d.tuNgay).substring(0, 4) === String(nam));
+  return tongOtGio(ds);
+}
+
+// NC-D: định mức nghỉ việc riêng (JSON từ CauHinh)
+function _dinhMucViecRieng() {
+  try { return JSON.parse(getConfig('dinh_muc_viec_rieng') || '{}'); } catch (_) { return {}; }
+}
+
 // Tìm email người duyệt kế tiếp (theo cấp) để thông báo
 function _emailNguoiDuyetKeTiep(don) {
   const tt = _thongTinDuyet(don);
@@ -86,9 +104,9 @@ function apiTaoDon(user, body) {
 
   const soNgay = tinhSoNgay(tuNgay, denNgay, donViTinh, _danhSachNgayLe());
   const nguonChiTra = body.nguonChiTra || nguonChiTraMacDinh(loaiDon);
+  let canhBao = '';
 
   // Cảnh báo số dư phép (không chặn ở GĐ2; trừ phép thực hiện ở GĐ3)
-  let canhBao = '';
   if (loaiDon === 'Phép năm' && typeof getSoDu === 'function') {
     try {
       const nam = Number(toDateStr(tuNgay).substring(0, 4));
@@ -99,20 +117,51 @@ function apiTaoDon(user, body) {
     } catch (_) { /* SoDuPhep chưa có ở GĐ2 */ }
   }
 
+  // NC-C: OT — số giờ + cảnh báo trần (chặn khi duyệt cuối)
+  const soGio = (loaiDon === 'OT') ? (Number(body.soGio) || 0) : '';
+  if (loaiDon === 'OT') {
+    if (soGio <= 0) throw new Error('Đơn OT phải nhập số giờ làm thêm');
+    const nam = Number(toDateStr(tuNgay).substring(0, 4));
+    const thang = Number(toDateStr(tuNgay).substring(5, 7));
+    const kt = kiemTraTranOT(_tongOtThang(user.maNV, nam, thang, null) + soGio,
+                             _tongOtNam(user.maNV, nam, null) + soGio,
+                             { thang: getConfigNumber('ot_max_thang', 40), nam: getConfigNumber('ot_max_nam', 200) });
+    if (kt.thongBao) canhBao = (canhBao ? canhBao + ' ' : '') + '⚠ ' + kt.thongBao;
+  }
+
+  // NC-D: Việc riêng — kiểm tra định mức theo lý do
+  const lyDoDinhMuc = (loaiDon === 'Việc riêng') ? (body.lyDoDinhMuc || '') : '';
+  if (loaiDon === 'Việc riêng' && lyDoDinhMuc) {
+    const dm = _dinhMucViecRieng();
+    if (dm[lyDoDinhMuc] != null && soNgay > dm[lyDoDinhMuc]) {
+      throw new Error('Việc riêng "' + lyDoDinhMuc + '" tối đa ' + dm[lyDoDinhMuc] +
+        ' ngày (xin ' + soNgay + '). Vui lòng giảm ngày hoặc chuyển sang Nghỉ không lương.');
+    }
+  }
+
   const maDon = genMaDon(user.maNV);
   const don = {
     maDon, maNV: user.maNV, loaiDon, donViTinh, nguonChiTra,
     tuNgay: toDateStr(tuNgay), denNgay: toDateStr(denNgay), soNgay,
     lyDo: String(body.lyDo).trim(), dinhKem: body.dinhKem || '',
-    trangThai: 'Chờ duyệt', ngayTao: new Date().toISOString()
+    trangThai: 'Chờ duyệt', ngayTao: new Date().toISOString(),
+    soGio: soGio, lyDoDinhMuc: lyDoDinhMuc
   };
   createDon(don);
-  appendLog(user.maNV, user.email, 'TAO_DON', 'DonTu', { maDon, loaiDon, soNgay });
+  appendLog(user.maNV, user.email, 'TAO_DON', 'DonTu', { maDon, loaiDon, soNgay, soGio });
 
   _guiMail(_emailNguoiDuyetKeTiep(don),
     '[Chấm công CSCC] Đơn mới cần duyệt: ' + loaiDon,
     user.hoTen + ' (' + user.maNV + ') vừa gửi đơn ' + loaiDon + ' từ ' +
     don.tuNgay + ' đến ' + don.denNgay + ' (' + soNgay + ' ngày). Vui lòng đăng nhập để duyệt.');
+
+  // NC-E: thông báo trong app cho người duyệt cấp 1 (quản lý trực tiếp)
+  if (typeof themThongBao === 'function') {
+    const nvTao = getNVByMa(user.maNV);
+    if (nvTao && nvTao.quanLyTrucTiep) {
+      themThongBao(nvTao.quanLyTrucTiep, user.hoTen + ' gửi đơn ' + loaiDon + ' cần bạn duyệt', 'duyet-don.html');
+    }
+  }
 
   return { ok: true, data: { maDon, soNgay, canhBao } };
 }
@@ -246,6 +295,19 @@ function apiDuyetDon(user, body) {
     throw new Error('Bạn không phải người duyệt cấp ' + tt.capHienTai + ' của đơn này');
   }
 
+  // NC-C: chặn duyệt CUỐI nếu đơn OT vượt trần tháng/năm
+  if (ketQua === 'Duyệt' && tt.capHienTai >= tt.capToiDa && don.loaiDon === 'OT') {
+    const namOT = Number(String(don.tuNgay).substring(0, 4));
+    const thangOT = Number(String(don.tuNgay).substring(5, 7));
+    const gioOT = Number(don.soGio) || 0;
+    const kt = kiemTraTranOT(_tongOtThang(don.maNV, namOT, thangOT, don.maDon) + gioOT,
+                             _tongOtNam(don.maNV, namOT, don.maDon) + gioOT,
+                             { thang: getConfigNumber('ot_max_thang', 40), nam: getConfigNumber('ot_max_nam', 200) });
+    if (kt.vuotThang || kt.vuotNam) {
+      throw new Error('Không thể duyệt cuối — ' + kt.thongBao + ' Vui lòng điều chỉnh đơn OT.');
+    }
+  }
+
   themBuocDuyet({ maDon, capDuyet: tt.capHienTai, nguoiDuyet: user.maNV, ketQua, yKien: yKien || '' });
   const trangThaiMoi = tinhTrangThaiSauBuoc(tt.capHienTai, tt.capToiDa, ketQua);
   updateDon(maDon, { trangThai: trangThaiMoi });
@@ -276,6 +338,14 @@ function apiDuyetDon(user, body) {
     _guiMail(_emailNguoiDuyetKeTiep(getDonByMa(maDon)),
       '[Chấm công CSCC] Đơn cần duyệt cấp tiếp theo',
       'Đơn ' + maDon + ' đã qua cấp ' + tt.capHienTai + ', chờ bạn duyệt.');
+  }
+
+  // NC-E: thông báo trong app cho người tạo đơn
+  if (typeof themThongBao === 'function' && ['Đã duyệt', 'Từ chối', 'Bổ sung'].indexOf(trangThaiMoi) !== -1) {
+    const msg = trangThaiMoi === 'Đã duyệt' ? 'Đơn ' + don.loaiDon + ' của bạn đã được DUYỆT'
+              : trangThaiMoi === 'Từ chối'  ? 'Đơn ' + don.loaiDon + ' bị TỪ CHỐI' + (yKien ? ': ' + yKien : '')
+              :                               'Đơn ' + don.loaiDon + ' cần BỔ SUNG' + (yKien ? ': ' + yKien : '');
+    themThongBao(don.maNV, msg, 'don-tu.html');
   }
 
   return { ok: true, data: { maDon, trangThai: trangThaiMoi, cap: tt.capHienTai } };

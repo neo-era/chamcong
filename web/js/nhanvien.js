@@ -70,6 +70,7 @@ function nhanVienApp() {
       this.isEdit  = true;
       this.showModal = true;
       this._clearMsg();
+      this.$nextTick(() => { if (window.syncDates) window.syncDates(); });
     },
 
     dongModal() { this.showModal = false; },

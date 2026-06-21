@@ -68,6 +68,7 @@ function donTuApp() {
       this.isBoSung = true;
       this._clearMsg();
       this.showModal = true;
+      this.$nextTick(() => { if (window.syncDates) window.syncDates(); });
     },
 
     dongModal() { this.showModal = false; },

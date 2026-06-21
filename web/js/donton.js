@@ -126,7 +126,9 @@ function donTuApp() {
                'Bổ sung':'badge-info', 'Thu hồi':'badge-gray' }[tt] || 'badge-gray';
     },
     moTaBuoc(b) {
-      return 'Cấp ' + b.capDuyet + ' · ' + (b.nguoiDuyet || '?') + ': ' + b.ketQua +
+      const nguoi = (b.nguoiDuyetTen || b.nguoiDuyet || '?') +
+                    (b.nguoiDuyetTen ? ' (' + b.nguoiDuyet + ')' : '');
+      return 'Cấp ' + b.capDuyet + ' · ' + nguoi + ': ' + b.ketQua +
              (b.yKien ? ' — ' + b.yKien : '') + ' (' + this.fmtNgay(b.thoiDiem) + ')';
     },
     _clearMsg() { this.errorMsg = ''; this.successMsg = ''; this.canhBao = ''; }

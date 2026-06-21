@@ -75,6 +75,7 @@
     Kỳ <strong x-text="data && data.ky"></strong>:
     <span x-text="data && (fmtNgay(data.tuNgay) + ' → ' + fmtNgay(data.denNgay))"></span> ·
     Mã: N=công ngày, D=công đêm, P=phép, R=việc riêng, Ô=ốm, TS=thai sản, KL=không lương, L=lễ/nghỉ, 0=bỏ việc.
+    Khối trực tiếp kèm số giờ, vd <strong>N·8</strong> = công ngày 8 giờ.
   </div>
 
   <div x-show="loading" style="text-align:center;padding:2rem;">
@@ -126,7 +127,7 @@
         <thead>
           <tr>
             <th>Mã NV</th><th>Họ tên</th><th>Đơn vị</th>
-            <th>Công ngày</th><th>Công đêm</th>
+            <th>Công ngày</th><th>Công đêm</th><th>Tổng giờ</th>
             <th>Phép (P)</th><th>Việc riêng (R)</th><th>Bệnh (Ô)</th><th>Thai sản (TS)</th><th>Không lương (KL)</th>
             <th>Bỏ việc</th><th>🔒</th>
           </tr>
@@ -139,6 +140,7 @@
               <td x-text="row.donVi || '—'"></td>
               <td x-text="row.tongHop.congNgay"></td>
               <td x-text="row.tongHop.congDem"></td>
+              <td x-text="row.tongHop.tongGioCong != null ? row.tongHop.tongGioCong : '—'"></td>
               <td x-text="row.tongHop.nghiP"></td>
               <td x-text="row.tongHop.nghiR"></td>
               <td x-text="row.tongHop.nghiOm"></td>

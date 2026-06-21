@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quản trị — CSCC</title>
+  <link rel="stylesheet" href="css/main.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="logo">⚡ CSCC Quản trị</div>
+  <div class="user-info">
+    <nav class="nav-links hide-mobile">
+      <a href="chamcong.html" data-page="chamcong">Chấm công</a>
+      <a href="don-tu.html"   data-page="dontu">Đơn từ</a>
+      <a href="duyet-don.html" data-page="duyetdon" data-roles="ToTruong,TruongDonVi,BGD">Duyệt đơn</a>
+      <a href="bang-cong.html" data-page="bangcong">Bảng công</a>
+      <a href="so-du-phep.html" data-page="soduphep">Số dư phép</a>
+      <a href="ky-luat.html" data-page="kyluat" data-roles="ToTruong,TruongDonVi,BGD,HR,Admin">Cảnh báo KL</a>
+      <a href="phanca.html"   data-page="phanca"   data-roles="ToTruong,TruongDonVi,HR,Admin,BGD">Phân ca</a>
+      <a href="nhanvien.html" data-page="nhanvien" data-roles="HR,Admin">Nhân viên</a>
+      <a href="sua-cham-cong.html" data-page="suachamcong" data-roles="HR,Admin">Sửa chấm công</a>
+      <a href="quan-tri.html" data-page="quantri" data-roles="Admin">Quản trị</a>
+    </nav>
+    <span id="header-name">—</span>
+    <span id="header-role" style="opacity:.7;font-size:.8rem;"></span>
+    <button class="btn btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3);padding:.3rem .7rem;font-size:.8rem;"
+            onclick="logout()">Đăng xuất</button>
+  </div>
+</header>
+
+<div class="container-wide" x-data="quanTriApp()" x-init="init()">
+
+  <div x-show="errorMsg"   class="alert alert-error"   x-text="errorMsg"></div>
+  <div x-show="successMsg" class="alert alert-success" x-text="successMsg"></div>
+
+  <!-- Tabs -->
+  <div class="card" style="padding:.6rem 1rem;display:flex;gap:.5rem;">
+    <button class="btn" :class="tab==='cauhinh' ? 'btn-primary' : 'btn-ghost'" @click="doiTab('cauhinh')">Cấu hình</button>
+    <button class="btn" :class="tab==='audit'   ? 'btn-primary' : 'btn-ghost'" @click="doiTab('audit')">Nhật ký (AuditLog)</button>
+  </div>
+
+  <div x-show="loading" style="text-align:center;padding:2rem;">
+    <div class="spinner spinner-dark" style="width:2rem;height:2rem;margin:0 auto;"></div>
+  </div>
+
+  <!-- TAB CẤU HÌNH -->
+  <div class="card" style="padding:0;" x-show="!loading && tab==='cauhinh'">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Key</th><th>Giá trị</th><th>Mô tả</th><th></th></tr></thead>
+        <tbody>
+          <template x-for="c in cauHinh" :key="c.key">
+            <tr>
+              <td><code x-text="c.key"></code></td>
+              <td><input class="form-control" style="min-width:200px;" x-model="c.value"></td>
+              <td style="font-size:.82rem;color:var(--gray-6);" x-text="c.moTa"></td>
+              <td>
+                <button class="btn btn-primary" style="padding:.3rem .7rem;font-size:.8rem;"
+                        @click="luu(c)" :disabled="savingKey===c.key">Lưu</button>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB AUDITLOG -->
+  <div x-show="!loading && tab==='audit'">
+    <div class="card" style="padding:1rem;display:flex;gap:.6rem;align-items:flex-end;flex-wrap:wrap;">
+      <div class="form-group" style="margin:0;"><label class="form-label">Từ ngày</label><input class="form-control" type="date" x-model="fTu"></div>
+      <div class="form-group" style="margin:0;"><label class="form-label">Đến ngày</label><input class="form-control" type="date" x-model="fDen"></div>
+      <div class="form-group" style="margin:0;"><label class="form-label">Action</label><input class="form-control" placeholder="VD: DUYET_DON" x-model="fAction"></div>
+      <div class="form-group" style="margin:0;"><label class="form-label">Mã NV</label><input class="form-control" x-model="fMaNV"></div>
+      <button class="btn btn-primary" @click="timLog()">Lọc</button>
+      <span style="margin-left:auto;font-size:.85rem;color:var(--gray-5);">
+        Trang <span x-text="logPage"></span>/<span x-text="soTrang"></span> · <span x-text="logTotal"></span> bản ghi
+      </span>
+    </div>
+
+    <div class="card" style="padding:0;">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Thời điểm</th><th>Người</th><th>Action</th><th>Đối tượng</th><th>Chi tiết</th></tr></thead>
+          <tbody>
+            <template x-for="lg in logs" :key="lg.maLog">
+              <tr>
+                <td x-text="fmtNgayGio(lg.thoiDiem)"></td>
+                <td x-text="(lg.maNV || '') + (lg.email ? ' / ' + lg.email : '')"></td>
+                <td><code x-text="lg.action"></code></td>
+                <td x-text="lg.doiTuong"></td>
+                <td style="max-width:380px;font-size:.78rem;word-break:break-all;" x-text="chiTietStr(lg.chiTiet)"></td>
+              </tr>
+            </template>
+            <tr x-show="!logs.length"><td colspan="5" style="text-align:center;padding:2rem;color:var(--gray-5);">Không có bản ghi</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:.5rem;justify-content:center;padding:.75rem;">
+      <button class="btn btn-ghost" @click="trang(-1)" :disabled="logPage<=1">← Trước</button>
+      <button class="btn btn-ghost" @click="trang(1)"  :disabled="logPage>=soTrang">Sau →</button>
+    </div>
+  </div>
+
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/quantri.js"></script>
+</body>
+</html>

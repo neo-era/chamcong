@@ -108,20 +108,26 @@ function apiChamRa(user, body) {
 }
 
 // POST action=suaChamCong — HR/Admin only; BẮT BUỘC có lyDo; ghi AuditLog
+// Cho phép sửa cả trangThai thủ công (vd đánh dấu VANG_PHEP/VANG_KHONG_PHEP); nếu không
+// truyền trangThai thì tính lại từ giờ vào/ra theo Điều 7.3.
 function apiSuaChamCong(user, body) {
   requireQuyen(user, 'SUA_CHAM_CONG');
-  const { maCC, gioVao, gioRa, lyDo } = body;
+  const { maCC, gioVao, gioRa, trangThai: trangThaiMoi, lyDo } = body;
   if (!maCC) throw new Error('Thiếu maCC');
   if (!lyDo) throw new Error('Phải nhập lý do khi sửa chấm công (yêu cầu bởi quy trình)');
 
   const existing = getChamCongByMaCC(maCC);
   if (!existing) throw new Error('Không tìm thấy bản ghi: ' + maCC);
+  if (ccDaKhoa(existing)) throw new Error('Bản ghi đã khoá — phải mở khoá trước khi sửa');
 
   const ca        = getCaByMa(existing.maCa) || getCaMacDinh();
   const grace     = getConfigNumber('grace_minutes', 0);
   const newGioVao = gioVao || existing.gioVao;
   const newGioRa  = gioRa  || existing.gioRa  || null;
-  const trangThai = tinhTrangThaiCong(newGioVao, newGioRa, ca, grace);
+  // Ưu tiên trangThai do HR chỉ định; nếu rỗng → tính lại từ giờ (TRE/SOM vẫn mất công cả ngày).
+  const trangThai = (trangThaiMoi && TRANG_THAI_CC[trangThaiMoi])
+    ? trangThaiMoi
+    : tinhTrangThaiCong(newGioVao, newGioRa, ca, grace);
 
   updateChamCong(maCC, { gioVao: newGioVao, gioRa: newGioRa || '', trangThai });
 
@@ -135,6 +141,40 @@ function apiSuaChamCong(user, body) {
     ok: true,
     data: { maCC, trangThai, trangThaiLabel: labelTrangThai(trangThai) }
   };
+}
+
+// Tìm bản ghi từ body: ưu tiên maCC, nếu không có thì theo maNV + ngay.
+function _resolveChamCong(body) {
+  if (body.maCC) {
+    const cc = getChamCongByMaCC(body.maCC);
+    if (!cc) throw new Error('Không tìm thấy bản ghi: ' + body.maCC);
+    return cc;
+  }
+  if (body.maNV && body.ngay) {
+    const cc = getChamCongNgay(body.maNV, body.ngay);
+    if (!cc) throw new Error('Không có bản ghi chấm công cho ' + body.maNV + ' ngày ' + body.ngay);
+    return cc;
+  }
+  throw new Error('Thiếu maCC hoặc (maNV + ngay)');
+}
+
+// POST action=khoaChamCong — HR/Admin khoá bản ghi để chốt công; ghi AuditLog.
+function apiKhoaChamCong(user, body) {
+  requireQuyen(user, 'KHOA_BANG_CONG');
+  const existing = _resolveChamCong(body);
+  setChamCongLock(existing.maCC, true);
+  appendLog(user.maNV, user.email, 'KHOA_CHAM_CONG', 'ChamCong', { maCC: existing.maCC, ngay: toDateStr(existing.ngay) });
+  return { ok: true, data: { maCC: existing.maCC, isLocked: true } };
+}
+
+// POST action=moKhoaChamCong — HR/Admin mở khoá; BẮT BUỘC có lyDo; ghi AuditLog.
+function apiMoKhoaChamCong(user, body) {
+  requireQuyen(user, 'KHOA_BANG_CONG');
+  if (!body.lyDo) throw new Error('Phải nhập lý do khi mở khoá bản ghi chấm công');
+  const existing = _resolveChamCong(body);
+  setChamCongLock(existing.maCC, false);
+  appendLog(user.maNV, user.email, 'MO_KHOA_CHAM_CONG', 'ChamCong', { maCC: existing.maCC, ngay: toDateStr(existing.ngay), lyDo: body.lyDo });
+  return { ok: true, data: { maCC: existing.maCC, isLocked: false } };
 }
 
 function _formatGio(isoOrDate) {

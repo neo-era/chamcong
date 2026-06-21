@@ -90,7 +90,7 @@ function setupGD1() {
   getOrCreateSheet('NhanVien',  ['maNV','hoTen','donVi','khoi','chucDanh','dieuKienCV','ngayVaoLam','quanLyTrucTiep','trangThai','email','vaiTro']);
   getOrCreateSheet('Ca',        ['maCa','tenCa','gioBatDau','gioKetThuc','banDem']);
   getOrCreateSheet('LichTruc',  ['maLT','maNV','ngay','maCa']);
-  getOrCreateSheet('ChamCong',  ['maCC','maNV','ngay','maCa','gioVao','gioRa','nguon','toaDo','trangThai']);
+  getOrCreateSheet('ChamCong',  ['maCC','maNV','ngay','maCa','gioVao','gioRa','nguon','toaDo','trangThai','isLocked']);
   getOrCreateSheet('CauHinh',   ['key','value','moTa']);
   getOrCreateSheet('AuditLog',  ['maLog','thoiDiem','maNV','email','action','doiTuong','chiTiet']);
 
@@ -115,6 +115,11 @@ function _initCauHinhDefaults() {
     ['nguong_ky_luat_30_sa',     '5',                'Ngày bỏ việc/30 ngày → sa thải'],
     ['nguong_ky_luat_365_sa',    '20',               'Ngày bỏ việc/365 ngày → sa thải'],
     ['nguong_duyet_cap_cao',     '2',                'Phép > N ngày cần duyệt cấp 3'],
+    ['phep_co_ban_binh_thuong',  '12',               'Phép năm cơ bản — điều kiện bình thường'],
+    ['phep_co_ban_nang_nhoc',    '14',               'Phép năm cơ bản — nặng nhọc/độc hại'],
+    ['phep_co_ban_dac_biet',     '16',               'Phép năm cơ bản — đặc biệt nặng nhọc'],
+    ['ngay_cat_ky_cong',         '21',               'Ngày cắt kỳ công (kỳ = 21 tháng trước → 20 tháng này)'],
+    ['ngay_le_tet',              '2026-01-01,2026-02-16,2026-02-17,2026-02-18,2026-02-19,2026-02-20,2026-04-26,2026-04-30,2026-05-01,2026-09-02,2026-09-03', 'Ngày nghỉ lễ/tết 2026 (yyyy-MM-dd, cách nhau dấu phẩy) — xác nhận theo thông báo chính thức'],
     ['timezone',                  'Asia/Ho_Chi_Minh', 'Múi giờ hệ thống'],
   ];
   defaults.forEach(([key, value, moTa]) => {

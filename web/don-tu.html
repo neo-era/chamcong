@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Đơn từ — CSCC</title>
+  <link rel="stylesheet" href="css/main.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="logo">⚡ CSCC Đơn từ</div>
+  <div class="user-info">
+    <nav class="nav-links hide-mobile">
+      <a href="chamcong.html" data-page="chamcong">Chấm công</a>
+      <a href="don-tu.html"   data-page="dontu">Đơn từ</a>
+      <a href="duyet-don.html" data-page="duyetdon" data-roles="ToTruong,TruongDonVi,BGD">Duyệt đơn</a>
+      <a href="bang-cong.html" data-page="bangcong">Bảng công</a>
+      <a href="so-du-phep.html" data-page="soduphep">Số dư phép</a>
+      <a href="ky-luat.html" data-page="kyluat" data-roles="ToTruong,TruongDonVi,BGD,HR,Admin">Cảnh báo KL</a>
+      <a href="quan-tri.html" data-page="quantri" data-roles="Admin">Quản trị</a>
+      <a href="phanca.html"   data-page="phanca"   data-roles="ToTruong,TruongDonVi,HR,Admin,BGD">Phân ca</a>
+      <a href="nhanvien.html" data-page="nhanvien" data-roles="HR,Admin">Nhân viên</a>
+      <a href="sua-cham-cong.html" data-page="suachamcong" data-roles="HR,Admin">Sửa chấm công</a>
+    </nav>
+    <span id="header-name">—</span>
+    <span id="header-role" style="opacity:.7;font-size:.8rem;"></span>
+    <button class="btn btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3);padding:.3rem .7rem;font-size:.8rem;"
+            onclick="logout()">Đăng xuất</button>
+  </div>
+</header>
+
+<div class="container-wide" x-data="donTuApp()" x-init="init()">
+
+  <div x-show="errorMsg"   class="alert alert-error"   x-text="errorMsg"></div>
+  <div x-show="successMsg" class="alert alert-success" x-text="successMsg"></div>
+  <div x-show="canhBao"    class="alert alert-warning" x-text="canhBao"></div>
+
+  <div class="card" style="padding:1rem;display:flex;align-items:center;gap:1rem;">
+    <h3 style="margin:0;">Đơn của tôi</h3>
+    <button class="btn btn-primary" style="margin-left:auto;" @click="moModalTao()">+ Tạo đơn mới</button>
+  </div>
+
+  <div x-show="loading" style="text-align:center;padding:2rem;">
+    <div class="spinner spinner-dark" style="width:2rem;height:2rem;margin:0 auto;"></div>
+  </div>
+
+  <div class="card" style="padding:0;" x-show="!loading">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Loại đơn</th>
+            <th>Từ → đến</th>
+            <th>Số ngày</th>
+            <th>Lý do</th>
+            <th>Trạng thái</th>
+            <th>Tiến độ duyệt</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="don in danhSach" :key="don.maDon">
+            <tr>
+              <td x-text="don.loaiDon"></td>
+              <td x-text="fmtNgay(don.tuNgay) + ' → ' + fmtNgay(don.denNgay)"></td>
+              <td x-text="don.soNgay"></td>
+              <td style="max-width:220px;" x-text="don.lyDo"></td>
+              <td><span :class="'badge ' + badgeDon(don.trangThai)" x-text="don.trangThai"></span></td>
+              <td style="font-size:.8rem;">
+                <template x-for="b in don.buoc" :key="b.maBuoc">
+                  <div x-text="moTaBuoc(b)"></div>
+                </template>
+                <span x-show="!don.buoc || !don.buoc.length" style="color:var(--gray-5);">Chưa có bước duyệt</span>
+              </td>
+              <td style="white-space:nowrap;">
+                <button class="btn btn-ghost" style="padding:.3rem .6rem;font-size:.8rem;"
+                        x-show="coTheBoSung(don)" @click="moModalBoSung(don)">Sửa &amp; nộp lại</button>
+                <button class="btn btn-ghost" style="padding:.3rem .6rem;font-size:.8rem;color:var(--danger,#c0392b);"
+                        x-show="coTheThuHoi(don)" @click="thuHoi(don)">Thu hồi</button>
+              </td>
+            </tr>
+          </template>
+          <tr x-show="!danhSach.length">
+            <td colspan="7" style="text-align:center;padding:2rem;color:var(--gray-5);">Chưa có đơn nào</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal tạo / bổ sung -->
+  <div class="modal-overlay" x-show="showModal" x-cloak @click.self="dongModal()">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 x-text="isBoSung ? 'Sửa &amp; nộp lại đơn' : 'Tạo đơn mới'"></h3>
+        <button class="modal-close" @click="dongModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div x-show="errorMsg" class="alert alert-error" x-text="errorMsg"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+          <div class="form-group">
+            <label class="form-label">Loại đơn *</label>
+            <select class="form-control" x-model="form.loaiDon" :disabled="isBoSung">
+              <option value="">— Chọn —</option>
+              <template x-for="l in loaiDonList" :key="l"><option :value="l" x-text="l"></option></template>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Đơn vị tính</label>
+            <select class="form-control" x-model="form.donViTinh">
+              <option>Ngày</option>
+              <option>Nửa ngày</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Từ ngày *</label>
+            <input class="form-control" type="date" x-model="form.tuNgay">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Đến ngày</label>
+            <input class="form-control" type="date" x-model="form.denNgay">
+          </div>
+          <div class="form-group" style="grid-column:1 / -1;">
+            <label class="form-label">Lý do *</label>
+            <input class="form-control" x-model="form.lyDo" placeholder="Lý do nghỉ / làm thêm…">
+          </div>
+          <div class="form-group" style="grid-column:1 / -1;">
+            <label class="form-label">Đính kèm (URL minh chứng — tuỳ chọn)</label>
+            <input class="form-control" x-model="form.dinhKem" placeholder="Link Google Drive / ảnh giấy tờ">
+          </div>
+        </div>
+        <p style="font-size:.85rem;color:var(--gray-6);margin-top:.5rem;">
+          Số ngày ước tính: <strong x-text="soNgayPreview"></strong> (loại T7/CN; ngày lễ &amp; số chính xác do hệ thống chốt khi gửi).
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" @click="dongModal()">Huỷ</button>
+        <button class="btn btn-primary" @click="luu()" :disabled="submitting">
+          <span x-show="submitting" class="spinner"></span>
+          <span x-text="isBoSung ? 'Nộp lại' : 'Gửi đơn'"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/donton.js"></script>
+</body>
+</html>

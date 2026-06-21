@@ -51,6 +51,8 @@ const Api = {
   chamVao:            (data)       => apiPost('chamVao', data),
   chamRa:             (data)       => apiPost('chamRa', data),
   suaChamCong:        (data)       => apiPost('suaChamCong', data),
+  khoaChamCong:       (data)       => apiPost('khoaChamCong', data),
+  moKhoaChamCong:     (data)       => apiPost('moKhoaChamCong', data),
 
   // Nhân viên
   getNhanVienList:    (p)          => apiGet('getNhanVienList', p || {}),
@@ -68,6 +70,28 @@ const Api = {
   getLichTrucTuan:    (p)          => apiGet('getLichTrucTuan', p),
   setLichTruc:        (data)       => apiPost('setLichTruc', data),
   deleteLichTruc:     (data)       => apiPost('deleteLichTruc', data),
+
+  // Đơn từ & duyệt (GĐ2)
+  taoDon:             (data)       => apiPost('taoDon', data),
+  thuHoiDon:          (maDon)      => apiPost('thuHoiDon', { maDon }),
+  suaDonBoSung:       (data)       => apiPost('suaDonBoSung', data),
+  duyetDon:           (data)       => apiPost('duyetDon', data),
+  danhSachDonCuaToi:  (p)          => apiGet('danhSachDonCuaToi', p || {}),
+  donChoDuyet:        (p)          => apiGet('donChoDuyet', p || {}),
+
+  // Phép & Bảng công (GĐ3)
+  getSoDuPhep:        (p)          => apiGet('getSoDuPhep', p || {}),
+  tinhQuotaDauNam:    (data)       => apiPost('tinhQuotaDauNam', data || {}),
+  getBangCong:        (p)          => apiGet('getBangCong', p || {}),
+  xuatBangCong:       (p)          => apiGet('xuatBangCong', p || {}),
+  khoaKyCong:         (data)       => apiPost('khoaKyCong', data),
+  moKhoaKyCong:       (data)       => apiPost('moKhoaKyCong', data),
+
+  // Kỷ luật & Quản trị (GĐ4)
+  getCanhBao:         (p)          => apiGet('getCanhBao', p || {}),
+  quetCanhBao:        ()           => apiPost('quetCanhBao', {}),
+  getAuditLog:        (p)          => apiGet('getAuditLog', p || {}),
+  setCauHinh:         (data)       => apiPost('setCauHinh', data),
 
   // CauHinh
   getCauHinh:         ()           => apiGet('getCauHinh')

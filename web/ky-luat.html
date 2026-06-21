@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cảnh báo kỷ luật — CSCC</title>
+  <link rel="stylesheet" href="css/main.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="logo">⚡ CSCC Cảnh báo kỷ luật</div>
+  <div class="user-info">
+    <nav class="nav-links hide-mobile">
+      <a href="chamcong.html" data-page="chamcong">Chấm công</a>
+      <a href="don-tu.html"   data-page="dontu">Đơn từ</a>
+      <a href="duyet-don.html" data-page="duyetdon" data-roles="ToTruong,TruongDonVi,BGD">Duyệt đơn</a>
+      <a href="bang-cong.html" data-page="bangcong">Bảng công</a>
+      <a href="so-du-phep.html" data-page="soduphep">Số dư phép</a>
+      <a href="ky-luat.html" data-page="kyluat" data-roles="ToTruong,TruongDonVi,BGD,HR,Admin">Cảnh báo KL</a>
+      <a href="phanca.html"   data-page="phanca"   data-roles="ToTruong,TruongDonVi,HR,Admin,BGD">Phân ca</a>
+      <a href="nhanvien.html" data-page="nhanvien" data-roles="HR,Admin">Nhân viên</a>
+      <a href="sua-cham-cong.html" data-page="suachamcong" data-roles="HR,Admin">Sửa chấm công</a>
+      <a href="quan-tri.html" data-page="quantri" data-roles="Admin">Quản trị</a>
+    </nav>
+    <span id="header-name">—</span>
+    <span id="header-role" style="opacity:.7;font-size:.8rem;"></span>
+    <button class="btn btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3);padding:.3rem .7rem;font-size:.8rem;"
+            onclick="logout()">Đăng xuất</button>
+  </div>
+</header>
+
+<div class="container-wide" x-data="kyLuatApp()" x-init="init()">
+
+  <div x-show="errorMsg"   class="alert alert-error"   x-text="errorMsg"></div>
+  <div x-show="successMsg" class="alert alert-success" x-text="successMsg"></div>
+
+  <div class="alert alert-warning" style="margin-bottom:1rem;">
+    ⚠ Hệ thống <strong>chỉ cảnh báo sớm</strong> khi NLĐ tiến gần ngưỡng — <strong>không tự ra quyết định kỷ luật</strong> (Điều 33–35 NQLĐ).
+    Ngưỡng (30 ngày): 3 → khiển trách · 4 → kéo dài nâng lương · 5 → sa thải. (365 ngày): 20 → sa thải.
+  </div>
+
+  <div class="card" style="padding:1rem;display:flex;gap:.75rem;align-items:flex-end;flex-wrap:wrap;">
+    <div class="form-group" style="margin:0;">
+      <label class="form-label">Đơn vị</label>
+      <select class="form-control" x-model="filterDonVi" @change="load()">
+        <option value="">— Tất cả —</option>
+        <template x-for="dv in donViOptions" :key="dv"><option :value="dv" x-text="dv"></option></template>
+      </select>
+    </div>
+    <div class="form-group" style="margin:0;">
+      <label class="form-label">Mức cảnh báo</label>
+      <select class="form-control" x-model="filterMuc" @change="load()">
+        <option value="">— Tất cả —</option>
+        <option>Khiển trách</option>
+        <option>Kéo dài nâng lương</option>
+        <option>Sa thải</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" style="margin-left:auto;" @click="quet()" :disabled="submitting">
+      <span x-show="submitting" class="spinner"></span>
+      <span>Quét lại cảnh báo</span>
+    </button>
+  </div>
+
+  <div x-show="loading" style="text-align:center;padding:2rem;">
+    <div class="spinner spinner-dark" style="width:2rem;height:2rem;margin:0 auto;"></div>
+  </div>
+
+  <div class="card" style="padding:0;" x-show="!loading">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Nhân viên</th><th>Đơn vị</th>
+            <th>Bỏ việc /30 ngày</th><th>Bỏ việc /365 ngày</th>
+            <th>Mức cảnh báo</th><th>Thời điểm</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="cb in danhSach" :key="cb.maCB">
+            <tr>
+              <td x-text="cb.hoTen + ' (' + cb.maNV + ')'"></td>
+              <td x-text="cb.donVi || '—'"></td>
+              <td x-text="cb.soNgayBoViec30"></td>
+              <td x-text="cb.soNgayBoViec365"></td>
+              <td><span :class="'badge ' + mucBadge(cb.mucCanhBao)" x-text="cb.mucCanhBao"></span></td>
+              <td x-text="fmtNgayGio(cb.thoiDiem)"></td>
+            </tr>
+          </template>
+          <tr x-show="!danhSach.length">
+            <td colspan="6" style="text-align:center;padding:2rem;color:var(--gray-5);">Chưa có cảnh báo nào</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/kyluat.js"></script>
+</body>
+</html>

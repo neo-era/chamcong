@@ -41,7 +41,6 @@ function duyetDonApp() {
     },
 
     moModal(don) {
-      alert('TEST: mở chi tiết đơn ' + (don && don.maDon));   // TẠM — gỡ sau khi xác định
       this.don = don;
       this.ketQua = 'Duyệt';
       this.yKien = '';

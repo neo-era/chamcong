@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bảng công — CSCC</title>
+  <link rel="stylesheet" href="css/main.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <style>
+    .bc-grid { font-size: .8rem; }
+    .bc-grid th, .bc-grid td { text-align: center; padding: .3rem .35rem; white-space: nowrap; }
+    .bc-grid td.nv { text-align: left; position: sticky; left: 0; background: #fff; }
+    .bc-grid th.nv { text-align: left; position: sticky; left: 0; background: var(--gray-2); z-index: 1; }
+  </style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="logo">⚡ CSCC Bảng công</div>
+  <div class="user-info">
+    <nav class="nav-links hide-mobile">
+      <a href="chamcong.html" data-page="chamcong">Chấm công</a>
+      <a href="don-tu.html"   data-page="dontu">Đơn từ</a>
+      <a href="duyet-don.html" data-page="duyetdon" data-roles="ToTruong,TruongDonVi,BGD">Duyệt đơn</a>
+      <a href="bang-cong.html" data-page="bangcong">Bảng công</a>
+      <a href="so-du-phep.html" data-page="soduphep">Số dư phép</a>
+      <a href="ky-luat.html" data-page="kyluat" data-roles="ToTruong,TruongDonVi,BGD,HR,Admin">Cảnh báo KL</a>
+      <a href="quan-tri.html" data-page="quantri" data-roles="Admin">Quản trị</a>
+      <a href="phanca.html"   data-page="phanca"   data-roles="ToTruong,TruongDonVi,HR,Admin,BGD">Phân ca</a>
+      <a href="nhanvien.html" data-page="nhanvien" data-roles="HR,Admin">Nhân viên</a>
+      <a href="sua-cham-cong.html" data-page="suachamcong" data-roles="HR,Admin">Sửa chấm công</a>
+    </nav>
+    <span id="header-name">—</span>
+    <span id="header-role" style="opacity:.7;font-size:.8rem;"></span>
+    <button class="btn btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3);padding:.3rem .7rem;font-size:.8rem;"
+            onclick="logout()">Đăng xuất</button>
+  </div>
+</header>
+
+<div class="container-wide" x-data="bangCongApp()" x-init="init()">
+
+  <div x-show="errorMsg"   class="alert alert-error"   x-text="errorMsg"></div>
+  <div x-show="successMsg" class="alert alert-success" x-text="successMsg"></div>
+
+  <!-- Toolbar -->
+  <div class="card" style="padding:1rem;display:flex;gap:.75rem;align-items:flex-end;flex-wrap:wrap;">
+    <div class="form-group" style="margin:0;">
+      <label class="form-label">Kỳ công</label>
+      <input class="form-control" type="month" x-model="ky" @change="load()">
+    </div>
+    <div class="form-group" style="margin:0;" x-show="laQuanLy">
+      <label class="form-label">Đơn vị</label>
+      <select class="form-control" x-model="donVi" @change="load()">
+        <option value="">— Tất cả —</option>
+        <template x-for="dv in donViOptions" :key="dv"><option :value="dv" x-text="dv"></option></template>
+      </select>
+    </div>
+    <div class="form-group" style="margin:0;">
+      <label class="form-label">Chế độ xem</label>
+      <select class="form-control" x-model="cheDo">
+        <option value="chi_tiet">Chi tiết (lưới ngày)</option>
+        <option value="tong_hop">Tổng hợp</option>
+      </select>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:.5rem;">
+      <button class="btn btn-ghost" @click="xuat()">⬇ Xuất Excel (CSV)</button>
+      <button class="btn btn-primary" x-show="laQuanLy && moiKhoa" @click="khoa()" :disabled="submitting">🔒 Khoá kỳ</button>
+      <button class="btn btn-ghost"   x-show="laQuanLy && !moiKhoa" @click="moKhoa()" :disabled="submitting">🔓 Mở khoá</button>
+    </div>
+  </div>
+
+  <div x-show="data" style="padding:0 .25rem .5rem;font-size:.85rem;color:var(--gray-6);">
+    Kỳ <strong x-text="data && data.ky"></strong>:
+    <span x-text="data && (fmtNgay(data.tuNgay) + ' → ' + fmtNgay(data.denNgay))"></span> ·
+    Mã: N=công ngày, D=công đêm, P=phép, R=việc riêng, Ô=ốm, TS=thai sản, KL=không lương, L=lễ/nghỉ, 0=bỏ việc.
+  </div>
+
+  <div x-show="loading" style="text-align:center;padding:2rem;">
+    <div class="spinner spinner-dark" style="width:2rem;height:2rem;margin:0 auto;"></div>
+  </div>
+
+  <!-- CHI TIẾT -->
+  <div class="card" style="padding:0;" x-show="!loading && data && cheDo==='chi_tiet'">
+    <div class="table-wrap">
+      <table class="bc-grid">
+        <thead>
+          <tr>
+            <th class="nv">Nhân viên</th>
+            <template x-for="d in (data ? data.ngayList : [])" :key="d.ngay">
+              <th :title="d.thu + ' ' + d.ngay" x-text="soNgay(d.ngay)"></th>
+            </template>
+            <th>Ngày</th><th>Đêm</th><th>P</th><th>R</th><th>Ô</th><th>TS</th><th>KL</th><th>🔒</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="row in (data ? data.rows : [])" :key="row.maNV">
+            <tr>
+              <td class="nv" x-text="row.hoTen + ' (' + row.maNV + ')'"></td>
+              <template x-for="d in data.ngayList" :key="d.ngay">
+                <td :style="maStyle(row.days[d.ngay])" x-text="row.days[d.ngay]"></td>
+              </template>
+              <td x-text="row.tongHop.congNgay"></td>
+              <td x-text="row.tongHop.congDem"></td>
+              <td x-text="row.tongHop.nghiP"></td>
+              <td x-text="row.tongHop.nghiR"></td>
+              <td x-text="row.tongHop.nghiOm"></td>
+              <td x-text="row.tongHop.nghiTS"></td>
+              <td x-text="row.tongHop.nghiKL"></td>
+              <td x-text="row.isLocked ? '🔒' : ''"></td>
+            </tr>
+          </template>
+          <tr x-show="data && !data.rows.length">
+            <td colspan="99" style="text-align:center;padding:2rem;color:var(--gray-5);">Không có dữ liệu</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TỔNG HỢP -->
+  <div class="card" style="padding:0;" x-show="!loading && data && cheDo==='tong_hop'">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Mã NV</th><th>Họ tên</th><th>Đơn vị</th>
+            <th>Công ngày</th><th>Công đêm</th>
+            <th>Phép (P)</th><th>Việc riêng (R)</th><th>Bệnh (Ô)</th><th>Thai sản (TS)</th><th>Không lương (KL)</th>
+            <th>Bỏ việc</th><th>🔒</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="row in (data ? data.rows : [])" :key="row.maNV">
+            <tr>
+              <td><code x-text="row.maNV"></code></td>
+              <td x-text="row.hoTen"></td>
+              <td x-text="row.donVi || '—'"></td>
+              <td x-text="row.tongHop.congNgay"></td>
+              <td x-text="row.tongHop.congDem"></td>
+              <td x-text="row.tongHop.nghiP"></td>
+              <td x-text="row.tongHop.nghiR"></td>
+              <td x-text="row.tongHop.nghiOm"></td>
+              <td x-text="row.tongHop.nghiTS"></td>
+              <td x-text="row.tongHop.nghiKL"></td>
+              <td :style="row.tongHop.boViec ? 'color:var(--red);font-weight:600' : ''" x-text="row.tongHop.boViec"></td>
+              <td x-text="row.isLocked ? '🔒' : ''"></td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/bangcong.js"></script>
+</body>
+</html>

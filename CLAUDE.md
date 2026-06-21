@@ -14,6 +14,7 @@ Phần mềm chấm công – nghỉ phép – duyệt đơn cho đơn vị **Ch
 - `docs/03-approval-workflow.md` — luồng duyệt + phân quyền.
 - `docs/04-compliance-matrix.md` — đối chiếu Nội quy ↔ chức năng.
 - `docs/05-legal-insurance.md` — BHXH/BHYT/BHTN & lương tối thiểu (cập nhật 2026).
+- `docs/06-bang-cong-template.md` — đặc tả biểu mẫu bảng công tháng (đầu ra GĐ3), trích từ file mẫu `docs/Copy of Chấm công tháng 6.xlsx`.
 
 ## Hằng số pháp lý hiện hành (đưa vào CauHinh, KHÔNG hardcode)
 

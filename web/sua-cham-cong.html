@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sửa chấm công — CSCC</title>
+  <link rel="stylesheet" href="css/main.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="logo">⚡ CSCC Sửa chấm công</div>
+  <div class="user-info">
+    <nav class="nav-links hide-mobile">
+      <a href="chamcong.html" data-page="chamcong">Chấm công</a>
+      <a href="don-tu.html"   data-page="dontu">Đơn từ</a>
+      <a href="duyet-don.html" data-page="duyetdon" data-roles="ToTruong,TruongDonVi,BGD">Duyệt đơn</a>
+      <a href="bang-cong.html" data-page="bangcong">Bảng công</a>
+      <a href="so-du-phep.html" data-page="soduphep">Số dư phép</a>
+      <a href="ky-luat.html" data-page="kyluat" data-roles="ToTruong,TruongDonVi,BGD,HR,Admin">Cảnh báo KL</a>
+      <a href="quan-tri.html" data-page="quantri" data-roles="Admin">Quản trị</a>
+      <a href="phanca.html"   data-page="phanca"   data-roles="ToTruong,TruongDonVi,HR,Admin,BGD">Phân ca</a>
+      <a href="nhanvien.html" data-page="nhanvien" data-roles="HR,Admin">Nhân viên</a>
+      <a href="sua-cham-cong.html" data-page="suachamcong" data-roles="HR,Admin">Sửa chấm công</a>
+    </nav>
+    <span id="header-name">—</span>
+    <span id="header-role" style="opacity:.7;font-size:.8rem;"></span>
+    <button class="btn btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3);padding:.3rem .7rem;font-size:.8rem;"
+            onclick="logout()">Đăng xuất</button>
+  </div>
+</header>
+
+<div class="container-wide" x-data="suaChamCongApp()" x-init="init()">
+
+  <div x-show="errorMsg"   class="alert alert-error"   x-text="errorMsg"></div>
+  <div x-show="successMsg" class="alert alert-success" x-text="successMsg"></div>
+
+  <!-- Toolbar lọc -->
+  <div class="card" style="padding:1rem;">
+    <div style="display:flex;flex-wrap:wrap;gap:.75rem;align-items:flex-end;">
+      <div class="form-group" style="margin:0;">
+        <label class="form-label">Nhân viên</label>
+        <select class="form-control" style="min-width:240px;" x-model="maNV">
+          <option value="">— Chọn nhân viên —</option>
+          <template x-for="nv in danhSachNV" :key="nv.maNV">
+            <option :value="nv.maNV" x-text="nv.hoTen + ' (' + nv.maNV + ')'"></option>
+          </template>
+        </select>
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label class="form-label">Từ ngày</label>
+        <input class="form-control" type="date" x-model="tuNgay">
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label class="form-label">Đến ngày</label>
+        <input class="form-control" type="date" x-model="denNgay">
+      </div>
+      <button class="btn btn-primary" @click="timKiem()">Tìm</button>
+    </div>
+  </div>
+
+  <div x-show="loading" style="text-align:center;padding:2rem;">
+    <div class="spinner spinner-dark" style="width:2rem;height:2rem;margin:0 auto;"></div>
+  </div>
+
+  <!-- Bảng bản ghi -->
+  <div class="card" style="padding:0;" x-show="!loading && danhSach.length">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Ngày</th>
+            <th>Ca</th>
+            <th>Giờ vào</th>
+            <th>Giờ ra</th>
+            <th>Trạng thái</th>
+            <th>Nguồn</th>
+            <th>Khoá</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="cc in danhSach" :key="cc.maCC">
+            <tr>
+              <td x-text="fmtNgay(cc.ngay)"></td>
+              <td><code x-text="cc.maCa || '—'"></code></td>
+              <td x-text="fmtGio(cc.gioVao)"></td>
+              <td x-text="fmtGio(cc.gioRa)"></td>
+              <td><span :class="'badge ' + ttBadge(cc.trangThai)" x-text="ttLabel(cc.trangThai)"></span></td>
+              <td x-text="cc.nguon || '—'"></td>
+              <td>
+                <span x-show="laKhoa(cc)"  class="badge badge-gray">🔒 Đã khoá</span>
+                <span x-show="!laKhoa(cc)" style="color:var(--gray-5);font-size:.8rem;">Mở</span>
+              </td>
+              <td style="white-space:nowrap;">
+                <button class="btn btn-ghost" style="padding:.3rem .6rem;font-size:.8rem;"
+                        x-show="!laKhoa(cc)" @click="moModalSua(cc)">Sửa</button>
+                <button class="btn btn-ghost" style="padding:.3rem .6rem;font-size:.8rem;"
+                        x-show="!laKhoa(cc)" @click="khoa(cc)">Khoá</button>
+                <button class="btn btn-ghost" style="padding:.3rem .6rem;font-size:.8rem;color:var(--danger,#c0392b);"
+                        x-show="laKhoa(cc)" @click="moKhoa(cc)">Mở khoá</button>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal sửa -->
+  <div class="modal-overlay" x-show="showModal" x-cloak @click.self="dongModal()">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Sửa chấm công — <span x-text="fmtNgay(form.ngay)"></span></h3>
+        <button class="modal-close" @click="dongModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div x-show="errorMsg" class="alert alert-error" x-text="errorMsg"></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+          <div class="form-group">
+            <label class="form-label">Giờ vào</label>
+            <input class="form-control" type="time" x-model="form.gioVao">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Giờ ra</label>
+            <input class="form-control" type="time" x-model="form.gioRa">
+          </div>
+          <div class="form-group" style="grid-column:1 / -1;">
+            <label class="form-label">Trạng thái (để trống = tự tính lại từ giờ)</label>
+            <select class="form-control" x-model="form.trangThai">
+              <option value="">— Tự tính từ giờ vào/ra —</option>
+              <template x-for="k in ttOptions" :key="k">
+                <option :value="k" x-text="ttLabel(k)"></option>
+              </template>
+            </select>
+          </div>
+          <div class="form-group" style="grid-column:1 / -1;">
+            <label class="form-label">Lý do sửa * (lưu vào nhật ký)</label>
+            <input class="form-control" x-model="form.lyDo" placeholder="VD: NV quên chấm ra, có xác nhận của tổ trưởng">
+          </div>
+        </div>
+        <p style="font-size:.8rem;color:var(--gray-5);margin-top:.5rem;">
+          ⚠ Đi trễ / về sớm vẫn tính mất công cả ngày (Điều 7.3 NQLĐ). Mọi sửa đổi được ghi nhật ký (người, thời điểm, giá trị cũ → mới).
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" @click="dongModal()">Huỷ</button>
+        <button class="btn btn-primary" @click="luu()" :disabled="submitting">
+          <span x-show="submitting" class="spinner"></span>
+          <span>Lưu thay đổi</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/suachamcong.js"></script>
+</body>
+</html>

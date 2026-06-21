@@ -47,6 +47,13 @@ function _routeGet(action, user, params) {
     case 'getLichTrucTuan':      return apiGetLichTrucTuan(user, params);
     case 'getChamCongHomNay':    return apiGetChamCongHomNay(user);
     case 'getChamCongKhoang':    return apiGetChamCongKhoang(user, params);
+    case 'danhSachDonCuaToi':    return apiDanhSachDonCuaToi(user, params);
+    case 'donChoDuyet':          return apiDonChoDuyet(user, params);
+    case 'getSoDuPhep':          return apiGetSoDuPhep(user, params);
+    case 'getBangCong':          return apiGetBangCong(user, params);
+    case 'xuatBangCong':         return apiXuatBangCong(user, params);
+    case 'getCanhBao':           return apiGetCanhBao(user, params);
+    case 'getAuditLog':          return apiGetAuditLog(user, params);
     case 'getCauHinh':           return { ok: true, data: getAllConfig() };
     default:
       throw new Error('GET action không hợp lệ: ' + action);
@@ -59,6 +66,8 @@ function _routePost(action, user, body) {
     case 'chamVao':          return apiChamVao(user, body);
     case 'chamRa':           return apiChamRa(user, body);
     case 'suaChamCong':      return apiSuaChamCong(user, body);
+    case 'khoaChamCong':     return apiKhoaChamCong(user, body);
+    case 'moKhoaChamCong':   return apiMoKhoaChamCong(user, body);
     case 'doiMatKhau':       return apiDoiMatKhau(user, body);
     case 'resetMatKhau':     return apiResetMatKhau(user, body);
     case 'createNhanVien':   return apiCreateNhanVien(user, body);
@@ -67,6 +76,15 @@ function _routePost(action, user, body) {
     case 'updateCa':         return apiUpdateCa(user, body);
     case 'setLichTruc':      return apiSetLichTruc(user, body);
     case 'deleteLichTruc':   return apiDeleteLichTruc(user, body);
+    case 'taoDon':           return apiTaoDon(user, body);
+    case 'thuHoiDon':        return apiThuHoiDon(user, body);
+    case 'suaDonBoSung':     return apiSuaDonBoSung(user, body);
+    case 'duyetDon':         return apiDuyetDon(user, body);
+    case 'tinhQuotaDauNam':  return apiTinhQuotaDauNam(user, body);
+    case 'khoaKyCong':       return apiKhoaKyCong(user, body);
+    case 'moKhoaKyCong':     return apiMoKhoaKyCong(user, body);
+    case 'quetCanhBao':      return apiQuetCanhBao(user, body);
+    case 'setCauHinh':       return apiSetCauHinh(user, body);
     default:
       throw new Error('POST action không hợp lệ: ' + action);
   }

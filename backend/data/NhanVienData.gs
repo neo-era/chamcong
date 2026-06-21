@@ -2,7 +2,10 @@
 
 const NV_SHEET   = 'NhanVien';
 const NV_HEADERS = ['maNV','hoTen','donVi','khoi','chucDanh','dieuKienCV',
-                    'ngayVaoLam','quanLyTrucTiep','trangThai','email','vaiTro','matKhau'];
+                    'ngayVaoLam','quanLyTrucTiep','trangThai','email','vaiTro','matKhau','salt'];
+
+// Số vòng lặp băm (chống brute-force). Chỉ chạy khi đăng nhập/đổi mật khẩu.
+const SALT_ITER = 1000;
 
 function getNVByEmail(email) {
   const sh = getSheet(NV_SHEET);
@@ -47,33 +50,60 @@ function updateNV(maNV, updates) {
   updateRow(sh, found.row, found.obj, NV_HEADERS);
 }
 
-// Lưu hash mật khẩu cho NV (Admin gọi, hoặc dùng setPassword() dưới)
-function setMatKhauNV(maNV, matKhauHash) {
+// Thêm cột matKhau + salt vào sheet NhanVien nếu chưa có (migration, an toàn gọi nhiều lần)
+function addMatKhauColumn() {
+  const sh = getSheet(NV_SHEET);
+  let headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  if (!headers.includes('matKhau')) { sh.getRange(1, headers.length + 1).setValue('matKhau'); }
+  headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  if (!headers.includes('salt'))    { sh.getRange(1, headers.length + 1).setValue('salt'); }
+}
+function addSaltColumn() { addMatKhauColumn(); }   // alias
+
+// ── Băm mật khẩu có salt ─────────────────────────────────────────────────────
+function _genSalt() {
+  return Utilities.getUuid().replace(/-/g, '');   // 32 ký tự hex ngẫu nhiên
+}
+
+// Băm có salt + lặp SALT_ITER vòng (chống dò mật khẩu yếu + chống rainbow table).
+function _hashSalted(raw, salt) {
+  let h = salt + '|' + raw;
+  for (let i = 0; i < SALT_ITER; i++) h = _hashSHA256(h + salt);
+  return h;
+}
+
+// Đặt mật khẩu (sinh salt mới + băm + lưu). Nguồn chân lý duy nhất để ghi mật khẩu.
+function datMatKhau(maNV, matKhauRaw) {
+  addMatKhauColumn();
+  const salt = _genSalt();
+  const hash = _hashSalted(matKhauRaw, salt);
   const sh = getSheet(NV_SHEET);
   const found = findRow(sh, 'maNV', maNV);
   if (!found) throw new Error('Không tìm thấy NV: ' + maNV);
-  found.obj.matKhau = matKhauHash;
+  found.obj.matKhau = hash;
+  found.obj.salt = salt;
   updateRow(sh, found.row, found.obj, NV_HEADERS);
 }
 
-// Thêm cột matKhau vào sheet NhanVien nếu chưa có (migration)
-function addMatKhauColumn() {
-  const sh = getSheet(NV_SHEET);
-  const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
-  if (!headers.includes('matKhau')) {
-    sh.getRange(1, headers.length + 1).setValue('matKhau');
-    Logger.log('Đã thêm cột matKhau vào sheet NhanVien');
-  } else {
-    Logger.log('Cột matKhau đã tồn tại');
+// Kiểm tra mật khẩu. Tự NÂNG CẤP bản ghi cũ (hash không salt) sang salted khi đăng nhập đúng.
+function kiemTraMatKhau(nv, matKhauRaw) {
+  if (!nv || !nv.matKhau) return false;
+  if (nv.salt) {
+    return _hashSalted(matKhauRaw, nv.salt) === nv.matKhau;
   }
+  // Bản ghi cũ: so hash SHA-256 không salt; nếu đúng → nâng cấp sang salted
+  if (_hashSHA256(matKhauRaw) === nv.matKhau) {
+    try { datMatKhau(nv.maNV, matKhauRaw); } catch (_) {}
+    return true;
+  }
+  return false;
 }
 
-// ── Hàm tiện ích dùng trong Apps Script Editor ──────────────────────────────
-// Admin chạy: setPassword('NV001', 'matkhau123') để đặt mật khẩu cho NV
+// ── Tiện ích dùng trong Apps Script Editor ──────────────────────────────────
+// Admin chạy: setPassword('NV001', 'matkhau123')
 function setPassword(maNV, matKhauRaw) {
-  const hash = _hashSHA256(matKhauRaw);
-  setMatKhauNV(maNV, hash);
-  Logger.log('✓ Đã đặt mật khẩu cho ' + maNV + ' (hash: ' + hash.substring(0,16) + '...)');
+  datMatKhau(maNV, matKhauRaw);
+  Logger.log('✓ Đã đặt mật khẩu (có salt) cho ' + maNV);
 }
 
 function _hashSHA256(str) {

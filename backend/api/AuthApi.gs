@@ -21,8 +21,7 @@ function apiLogin(body) {
   if (nv.trangThai === 'Nghỉ việc') throw new Error('Tài khoản đã bị vô hiệu hoá');
   if (!nv.matKhau) throw new Error('Tài khoản chưa được cấp mật khẩu. Liên hệ Admin/HR.');
 
-  const inputHash = _hashSHA256(matKhau);
-  if (inputHash !== nv.matKhau) throw new Error('Mật khẩu không đúng');
+  if (!kiemTraMatKhau(nv, matKhau)) throw new Error('Mật khẩu không đúng');
 
   const token = _createToken(nv.email);
   appendLog(nv.maNV, nv.email, 'DANG_NHAP', 'Auth', { ip: '' });
@@ -54,9 +53,9 @@ function apiDoiMatKhau(user, body) {
   if (matKhauMoi.length < 6) throw new Error('Mật khẩu mới phải có ít nhất 6 ký tự');
 
   const nv = getNVByMa(user.maNV);
-  if (_hashSHA256(matKhauCu) !== nv.matKhau) throw new Error('Mật khẩu cũ không đúng');
+  if (!kiemTraMatKhau(nv, matKhauCu)) throw new Error('Mật khẩu cũ không đúng');
 
-  setMatKhauNV(user.maNV, _hashSHA256(matKhauMoi));
+  datMatKhau(user.maNV, matKhauMoi);
   appendLog(user.maNV, user.email, 'DOI_MAT_KHAU', 'Auth', {});
   return { ok: true, message: 'Đã đổi mật khẩu thành công' };
 }
@@ -66,7 +65,7 @@ function apiResetMatKhau(user, body) {
   requireQuyen(user, 'QUAN_LY_NV');
   const { maNV, matKhauMoi } = body;
   if (!maNV || !matKhauMoi) throw new Error('Thiếu maNV hoặc matKhauMoi');
-  setMatKhauNV(maNV, _hashSHA256(matKhauMoi));
+  datMatKhau(maNV, matKhauMoi);
   appendLog(user.maNV, user.email, 'RESET_MAT_KHAU', 'NhanVien', { maNV });
   return { ok: true, message: 'Đã reset mật khẩu cho ' + maNV };
 }

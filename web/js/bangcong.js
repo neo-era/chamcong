@@ -81,10 +81,11 @@ function bangCongApp() {
 
     // ── Hiển thị ô mã ──────────────────────────────────────────────────────────
     maStyle(m) {
-      if (m === '0') return 'color:var(--red);font-weight:600;';
-      if (['P','R','Ô','TS','KL'].includes(m)) return 'color:var(--blue);';
-      if (m === 'L') return 'color:var(--gray-5);';
-      if (m === 'D') return 'color:var(--orange);font-weight:600;';
+      const base = String(m).split('·')[0];   // 'N·8' → 'N'
+      if (base === '0') return 'color:var(--red);font-weight:600;';
+      if (['P','R','Ô','TS','KL'].includes(base)) return 'color:var(--blue);';
+      if (base === 'L') return 'color:var(--gray-5);';
+      if (base === 'D') return 'color:var(--orange);font-weight:600;';
       return '';
     },
     soNgay(ngay) { return String(ngay).substring(8, 10); },

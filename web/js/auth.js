@@ -75,6 +75,8 @@ function renderHeader(activePage) {
     });
   }
 
+  _setupMenuMobile();
+
   const vaiTro = user.vaiTro;
   document.querySelectorAll('[data-roles]').forEach(el => {
     const roles = el.dataset.roles.split(',');
@@ -103,6 +105,25 @@ async function _capNhatBadgeDuyet() {
       link.appendChild(b);
     }
   } catch (_) { /* im lặng nếu lỗi mạng */ }
+}
+
+// Thêm nút ☰ mở/đóng menu trên mobile (1 lần)
+function _setupMenuMobile() {
+  const nav = document.querySelector('.nav-links');
+  const userInfo = document.querySelector('.app-header .user-info');
+  if (!nav || !userInfo || document.querySelector('.menu-toggle')) return;
+
+  const btn = document.createElement('button');
+  btn.className = 'menu-toggle';
+  btn.type = 'button';
+  btn.setAttribute('aria-label', 'Menu');
+  btn.textContent = '☰';
+  btn.addEventListener('click', (e) => { e.stopPropagation(); nav.classList.toggle('nav-open'); });
+  userInfo.insertBefore(btn, userInfo.firstChild);
+
+  // Đóng menu khi bấm ra ngoài hoặc chọn 1 mục
+  document.addEventListener('click', () => nav.classList.remove('nav-open'));
+  nav.addEventListener('click', (e) => { if (e.target.tagName === 'A') nav.classList.remove('nav-open'); });
 }
 
 function _vaiTroLabel(vaiTro) {

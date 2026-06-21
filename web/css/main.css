@@ -248,8 +248,24 @@ tr:hover td { background: var(--gray-1); }
 .info-list .value { font-weight: 600; }
 
 /* ── Responsive ─────────────────────────────────────────────────────────────── */
+/* Nút menu ☰ (chỉ hiện trên mobile) */
+.menu-toggle {
+  display: none; background: none; border: none; color: #fff;
+  font-size: 1.6rem; line-height: 1; cursor: pointer; padding: 0 .4rem; margin-right: .25rem;
+}
+
 @media (max-width: 600px) {
   .hide-mobile { display: none !important; }
+  .menu-toggle { display: inline-block; }
+  /* Khi mở: nav xổ xuống dạng dropdown */
+  .nav-links.nav-open {
+    display: flex !important; flex-direction: column; align-items: stretch;
+    position: absolute; top: 100%; right: 8px; min-width: 200px;
+    background: var(--blue-dk); padding: .4rem; gap: .15rem;
+    border-radius: .5rem; box-shadow: 0 10px 30px rgba(0,0,0,.35); z-index: 400;
+  }
+  .nav-links.nav-open a { padding: .65rem .85rem; border-radius: .35rem; color: #fff; }
+  .nav-links.nav-open a:hover, .nav-links.nav-open a.active { background: rgba(255,255,255,.15); text-decoration: none; }
   .container, .container-wide { padding: 1rem .75rem; }
   .cham-cong-btn { font-size: 1.05rem; padding: 1.1rem; }
   .modal { margin: 0; max-height: 100vh; border-radius: 1rem 1rem 0 0; align-self: flex-end; }

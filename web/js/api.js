@@ -78,6 +78,7 @@ const Api = {
   duyetDon:           (data)       => apiPost('duyetDon', data),
   danhSachDonCuaToi:  (p)          => apiGet('danhSachDonCuaToi', p || {}),
   donChoDuyet:        (p)          => apiGet('donChoDuyet', p || {}),
+  getDonChiTiet:      (maDon)      => apiGet('getDonChiTiet', { maDon }),
 
   // Phép & Bảng công (GĐ3)
   getSoDuPhep:        (p)          => apiGet('getSoDuPhep', p || {}),

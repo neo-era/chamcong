@@ -113,6 +113,10 @@ function donTuApp() {
       } catch (e) { this.errorMsg = e.message; }
     },
 
+    inDon(don) {
+      window.open('in-don.html?maDon=' + encodeURIComponent(don.maDon), '_blank');
+    },
+
     // ── Utilities ───────────────────────────────────────────────────────────────
     coTheThuHoi(don) { return ['Chờ duyệt', 'Bổ sung'].includes(don.trangThai); },
     coTheBoSung(don) { return don.trangThai === 'Bổ sung'; },

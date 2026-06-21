@@ -80,6 +80,28 @@ function renderHeader(activePage) {
     const roles = el.dataset.roles.split(',');
     el.style.display = roles.includes(vaiTro) ? '' : 'none';
   });
+
+  // Badge số đơn đang chờ chính mình duyệt (số màu đỏ) trên menu "Duyệt đơn"
+  if (['ToTruong', 'TruongDonVi', 'BGD', 'Admin'].includes(vaiTro)) {
+    _capNhatBadgeDuyet();
+  }
+}
+
+async function _capNhatBadgeDuyet() {
+  if (typeof Api === 'undefined' || !Api.donChoDuyet) return;
+  const link = document.querySelector('.nav-links a[data-page="duyetdon"]');
+  if (!link) return;
+  try {
+    const r = await Api.donChoDuyet();
+    const n = (r && r.data) ? r.data.length : 0;
+    link.textContent = 'Duyệt đơn';
+    if (n > 0) {
+      const b = document.createElement('span');
+      b.textContent = ' (' + n + ')';
+      b.style.cssText = 'color:#ef4444;font-weight:800;';
+      link.appendChild(b);
+    }
+  } catch (_) { /* im lặng nếu lỗi mạng */ }
 }
 
 function _vaiTroLabel(vaiTro) {

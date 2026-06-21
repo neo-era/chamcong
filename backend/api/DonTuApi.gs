@@ -29,7 +29,7 @@ function _thongTinDuyet(don) {
 // User có phải người duyệt hợp lệ cho `quyen` đối với NV tạo đơn không.
 function _canApprove(user, nv, quyen) {
   if (!quyen || !hasQuyen(user, quyen)) return false;
-  if (user.vaiTro === 'BGD') return true;                 // BGĐ duyệt mọi cấp trong quyền
+  if (['BGD', 'Admin'].includes(user.vaiTro)) return true; // BGĐ & Admin duyệt mọi cấp trong quyền
   if (quyen === 'DUYET_CAP1') {
     return user.maNV === nv.quanLyTrucTiep || user.donVi === nv.donVi;
   }
@@ -167,7 +167,7 @@ function apiDanhSachDonCuaToi(user, params) {
 
 // GET action=donChoDuyet — các đơn mà `user` là người duyệt cấp kế tiếp
 function apiDonChoDuyet(user, params) {
-  if (!['ToTruong', 'TruongDonVi', 'BGD'].includes(user.vaiTro)) {
+  if (!['ToTruong', 'TruongDonVi', 'BGD', 'Admin'].includes(user.vaiTro)) {
     throw new Error('Vai trò không có quyền duyệt đơn');
   }
   const ketQua = [];

@@ -65,17 +65,17 @@
           </tr>
         </thead>
         <tbody>
-          <template x-for="don in danhSach" :key="don.maDon">
+          <template x-for="row in danhSach" :key="row.maDon">
             <tr>
-              <td x-text="don.hoTenNV + ' (' + don.maNV + ')'"></td>
-              <td x-text="don.donViNV || '—'"></td>
-              <td x-text="don.loaiDon"></td>
-              <td x-text="fmtNgay(don.tuNgay) + ' → ' + fmtNgay(don.denNgay)"></td>
-              <td x-text="don.soNgay"></td>
-              <td x-text="don.capHienTai + '/' + don.capToiDa"></td>
+              <td x-text="row.hoTenNV + ' (' + row.maNV + ')'"></td>
+              <td x-text="row.donViNV || '—'"></td>
+              <td x-text="row.loaiDon"></td>
+              <td x-text="fmtNgay(row.tuNgay) + ' → ' + fmtNgay(row.denNgay)"></td>
+              <td x-text="row.soNgay"></td>
+              <td x-text="row.capHienTai + '/' + row.capToiDa"></td>
               <td>
                 <button class="btn btn-primary" style="padding:.3rem .7rem;font-size:.8rem;"
-                        @click="moModal(don)">Xem &amp; duyệt</button>
+                        @click="moModal(row)">Xem &amp; duyệt</button>
               </td>
             </tr>
           </template>

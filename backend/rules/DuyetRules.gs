@@ -27,24 +27,10 @@ const KET_QUA_DUYET = ['Duyệt', 'Từ chối', 'Yêu cầu bổ sung'];
  * @returns {string[]} ví dụ ['DUYET_CAP1','DUYET_CAP2']
  */
 function capDuyetYeuCau(loaiDon, soNgay, nguongDuyetCapCao) {
-  const nguong = Number(nguongDuyetCapCao) || 0;
-  switch (loaiDon) {
-    case 'Phép năm':
-    case 'Việc riêng':
-      return Number(soNgay) > nguong
-        ? ['DUYET_CAP1', 'DUYET_CAP2', 'DUYET_CAP3']
-        : ['DUYET_CAP1', 'DUYET_CAP2'];
-    case 'Không lương':
-      return ['DUYET_CAP1', 'DUYET_CAP2', 'DUYET_CAP3']; // bắt buộc cấp cao
-    case 'OT':
-      return ['DUYET_CAP2'];                              // Trưởng/Phó đơn vị (Điều 7.7)
-    case 'Công tác':
-    case 'Ra ngoài':
-      return ['DUYET_CAP1'];
-    default:
-      // Ốm đau / Chăm con ốm / Thai sản nữ-nam / TNLĐ-BNN / Khám thai → ghi nhận cấp 1
-      return ['DUYET_CAP1'];
-  }
+  // BS2 (docs/08): MỌI loại đơn duyệt đủ 3 cấp tuần tự
+  // Cấp 1 = Tổ trưởng → Cấp 2 = Trưởng đơn vị → Cấp 3 = BGĐ/Admin.
+  // (Giữ tham số soNgay/nguongDuyetCapCao để không vỡ chỗ gọi.)
+  return ['DUYET_CAP1', 'DUYET_CAP2', 'DUYET_CAP3'];
 }
 
 // Quyền cần có để duyệt bước thứ `cap` (1-indexed) của một đơn.

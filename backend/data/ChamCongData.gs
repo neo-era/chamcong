@@ -1,7 +1,7 @@
 // ─── ChamCongData.gs ──────────────────────────────────────────────────────────
 
 const CC_SHEET   = 'ChamCong';
-const CC_HEADERS = ['maCC','maNV','ngay','maCa','gioVao','gioRa','nguon','toaDo','trangThai','isLocked'];
+const CC_HEADERS = ['maCC','maNV','ngay','maCa','gioVao','gioRa','nguon','toaDo','trangThai','isLocked','soGioCong'];
 
 // Lấy sheet ChamCong và bảo đảm có đủ cột (migration an toàn, gọi nhiều lần được).
 function ccSheet() {
@@ -10,12 +10,15 @@ function ccSheet() {
   return sh;
 }
 
-// Thêm cột isLocked vào sheet cũ (đã tạo trước khi có khoá kỳ công).
+// Thêm cột mới (isLocked, soGioCong) vào sheet cũ — migration an toàn, gọi nhiều lần được.
 function ensureChamCongCols(sh) {
-  const lastCol = Math.max(sh.getLastColumn(), 1);
-  const headers = sh.getRange(1, 1, 1, lastCol).getValues()[0];
+  let headers = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), 1)).getValues()[0];
   if (headers.indexOf('isLocked') === -1) {
     sh.getRange(1, headers.length + 1).setValue('isLocked');
+    headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  }
+  if (headers.indexOf('soGioCong') === -1) {
+    sh.getRange(1, headers.length + 1).setValue('soGioCong');
   }
 }
 

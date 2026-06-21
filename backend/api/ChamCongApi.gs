@@ -35,12 +35,13 @@ function apiChamVao(user, body) {
   if (!ca)  throw new Error('Không có ca làm việc cho hôm nay');
 
   const grace     = getConfigNumber('grace_minutes', 0);
-  const trangThai = tinhTrangThaiCong(gioVao.toISOString(), null, ca, grace);
+  const theoGio   = (user.khoi === 'Trực tiếp');   // khối trực tiếp tính theo giờ
+  const trangThai = tinhTrangThaiCong(gioVao.toISOString(), null, ca, grace, theoGio);
   const nguon     = body.toaDo ? 'GPS hiện trường' : 'Trụ sở';
   const maCC      = genMaCC(user.maNV, ngay);
 
   if (existing) {
-    updateChamCong(maCC, { gioVao: gioVao.toISOString(), nguon, toaDo: body.toaDo || '', trangThai });
+    updateChamCong(maCC, { gioVao: gioVao.toISOString(), nguon, toaDo: body.toaDo || '', trangThai, soGioCong: 0 });
   } else {
     saveChamCong({
       maCC,
@@ -51,7 +52,8 @@ function apiChamVao(user, body) {
       gioRa:    '',
       nguon,
       toaDo:    body.toaDo || '',
-      trangThai
+      trangThai,
+      soGioCong: 0
     });
   }
 
@@ -83,11 +85,14 @@ function apiChamRa(user, body) {
 
   const ca    = getCaByMa(existing.maCa) || getCaMacDinh();
   const grace = getConfigNumber('grace_minutes', 0);
-  const trangThai = tinhTrangThaiCong(existing.gioVao, gioRa.toISOString(), ca, grace);
+  const theoGio   = (user.khoi === 'Trực tiếp');
+  const trangThai = tinhTrangThaiCong(existing.gioVao, gioRa.toISOString(), ca, grace, theoGio);
+  const soGioCong = tinhSoGioLam(trangThai, existing.gioVao, gioRa.toISOString(), ca, theoGio);
 
   updateChamCong(existing.maCC, {
     gioRa:    gioRa.toISOString(),
     trangThai,
+    soGioCong,
     toaDo:    body.toaDo ? (existing.toaDo || '') + '|Ra:' + body.toaDo : existing.toaDo
   });
 
@@ -122,14 +127,17 @@ function apiSuaChamCong(user, body) {
 
   const ca        = getCaByMa(existing.maCa) || getCaMacDinh();
   const grace     = getConfigNumber('grace_minutes', 0);
+  const nvBanGhi  = getNVByMa(existing.maNV);
+  const theoGio   = (nvBanGhi && nvBanGhi.khoi === 'Trực tiếp');   // theo khối của NV trong bản ghi
   const newGioVao = gioVao || existing.gioVao;
   const newGioRa  = gioRa  || existing.gioRa  || null;
-  // Ưu tiên trangThai do HR chỉ định; nếu rỗng → tính lại từ giờ (TRE/SOM vẫn mất công cả ngày).
+  // Ưu tiên trangThai do HR chỉ định; nếu rỗng → tính lại từ giờ (trực tiếp/gián tiếp tuỳ khối).
   const trangThai = (trangThaiMoi && TRANG_THAI_CC[trangThaiMoi])
     ? trangThaiMoi
-    : tinhTrangThaiCong(newGioVao, newGioRa, ca, grace);
+    : tinhTrangThaiCong(newGioVao, newGioRa, ca, grace, theoGio);
+  const soGioCong = tinhSoGioLam(trangThai, newGioVao, newGioRa, ca, theoGio);
 
-  updateChamCong(maCC, { gioVao: newGioVao, gioRa: newGioRa || '', trangThai });
+  updateChamCong(maCC, { gioVao: newGioVao, gioRa: newGioRa || '', trangThai, soGioCong });
 
   appendLog(user.maNV, user.email, 'SUA_CHAM_CONG', 'ChamCong', {
     maCC, lyDo,

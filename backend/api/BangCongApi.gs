@@ -65,17 +65,28 @@ function apiGetBangCong(user, params) {
   du.cc.forEach(r => { ccIdx[r.maNV + '|' + toDateStr(r.ngay)] = r; });
 
   const rows = dsNV.map(nv => {
+    const theoGio = (nv.khoi === 'Trực tiếp');   // khối trực tiếp: ô hiện "N·8"
     const days = {}, maList = [];
+    let tongGioCong = 0;
     ngayList.forEach(d => {
       const c  = ccIdx[nv.maNV + '|' + d.ngay] || null;
       const dn = _donCuaNgay(du.don, nv.maNV, d.ngay);
       const ca = c ? caMap[c.maCa] : null;
-      const m  = maNgay(c, ca, dn, d.ngay, ngayLeSet);
-      days[d.ngay] = m; maList.push(m);
+      const m  = maNgay(c, ca, dn, d.ngay, ngayLeSet);   // mã gốc (N/D/P/...)
+      maList.push(m);
+      // Hiển thị: khối trực tiếp, ngày có công (N/D) → kèm số giờ
+      if (theoGio && (m === 'N' || m === 'D') && c && c.soGioCong !== '' && c.soGioCong != null) {
+        days[d.ngay] = m + '·' + c.soGioCong;
+        tongGioCong += Number(c.soGioCong) || 0;
+      } else {
+        days[d.ngay] = m;
+      }
     });
+    const th = tongHopNV(maList);
+    th.tongGioCong = theoGio ? (Math.round(tongGioCong * 2) / 2) : null;
     return {
-      maNV: nv.maNV, hoTen: nv.hoTen, donVi: nv.donVi, dieuKienCV: nv.dieuKienCV,
-      days, tongHop: tongHopNV(maList), isLocked: kiemTraKhoa(ky, nv.maNV)
+      maNV: nv.maNV, hoTen: nv.hoTen, donVi: nv.donVi, dieuKienCV: nv.dieuKienCV, khoi: nv.khoi,
+      days, tongHop: th, isLocked: kiemTraKhoa(ky, nv.maNV)
     };
   });
 
@@ -191,13 +202,14 @@ function _aoaTongHop(r, dv1, dv2) {
   aoa.push(['']);
   aoa.push(['BẢNG TỔNG HỢP CHẤM CÔNG KỲ ' + r.ky + ' (' + r.tuNgay + ' đến ' + r.denNgay + ')']);
   aoa.push(['']);
-  const head = ['STT', 'Mã NV', 'Đơn vị', 'Họ và tên', 'Công ngày', 'Công đêm',
+  const head = ['STT', 'Mã NV', 'Đơn vị', 'Họ và tên', 'Công ngày', 'Công đêm', 'Tổng giờ',
     'Nghỉ phép (P)', 'Việc riêng (R)', 'Nghỉ bệnh (Ô)', 'Thai sản (TS)', 'Không lương (KL)', 'Bỏ việc'];
   aoa.push(head);
   r.rows.forEach((row, i) => {
     const t = row.tongHop;
     aoa.push([i + 1, row.maNV, row.donVi, row.hoTen,
-      t.congNgay, t.congDem, t.nghiP, t.nghiR, t.nghiOm, t.nghiTS, t.nghiKL, t.boViec]);
+      t.congNgay, t.congDem, (t.tongGioCong != null ? t.tongGioCong : ''),
+      t.nghiP, t.nghiR, t.nghiOm, t.nghiTS, t.nghiKL, t.boViec]);
   });
   _themChanKy(aoa, head.length);
   return aoa;
@@ -241,12 +253,13 @@ function _csvChiTiet(r) {
 function _csvTongHop(r) {
   const lines = [];
   lines.push('BẢNG TỔNG HỢP CHẤM CÔNG KỲ ' + r.ky + ' (' + r.tuNgay + ' đến ' + r.denNgay + ')');
-  lines.push(_csvRow(['STT', 'Mã NV', 'Đơn vị', 'Họ và tên', 'Công ngày', 'Công đêm',
+  lines.push(_csvRow(['STT', 'Mã NV', 'Đơn vị', 'Họ và tên', 'Công ngày', 'Công đêm', 'Tổng giờ',
     'Nghỉ phép (P)', 'Việc riêng (R)', 'Nghỉ bệnh (Ô)', 'Thai sản (TS)', 'Không lương (KL)', 'Bỏ việc']));
   r.rows.forEach((row, i) => {
     const t = row.tongHop;
     lines.push(_csvRow([i + 1, row.maNV, row.donVi, row.hoTen,
-      t.congNgay, t.congDem, t.nghiP, t.nghiR, t.nghiOm, t.nghiTS, t.nghiKL, t.boViec]));
+      t.congNgay, t.congDem, (t.tongGioCong != null ? t.tongGioCong : ''),
+      t.nghiP, t.nghiR, t.nghiOm, t.nghiTS, t.nghiKL, t.boViec]));
   });
   return lines.join('\n');
 }

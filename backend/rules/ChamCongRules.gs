@@ -23,8 +23,12 @@ const TRANG_THAI_CC = {
  * @param {number} graceMinutes    - Số phút ân hạn (từ CauHinh grace_minutes)
  * @returns {string} key của TRANG_THAI_CC
  */
-function tinhTrangThaiCong(gioVaoISO, gioRaISO, ca, graceMinutes) {
+function tinhTrangThaiCong(gioVaoISO, gioRaISO, ca, graceMinutes, theoGio) {
   if (!gioVaoISO) return 'MAT_CONG';
+
+  // Khối Trực tiếp (theoGio=true): có chấm vào → DU_CONG, công tính theo giờ.
+  // Đi trễ/về sớm KHÔNG đổi trạng thái (chỉ trừ giờ ở tinhSoGioLam). Xem docs/07.
+  if (theoGio) return 'DU_CONG';
 
   const gioVao = new Date(gioVaoISO);
   const grace  = parseInt(graceMinutes) || 0;
@@ -76,21 +80,27 @@ function labelTrangThai(key) {
  * Tính số giờ làm thực tế trong ngày (dùng cho bảng công GĐ3)
  * Trả về 0 nếu TRE/SOM/MAT_CONG (mất công cả ngày theo Điều 7.3)
  */
-function tinhSoGioLam(trangThai, gioVaoISO, gioRaISO, ca) {
+function tinhSoGioLam(trangThai, gioVaoISO, gioRaISO, ca, theoGio) {
   if (!gioVaoISO || !gioRaISO) return 0;
+
+  // Khối Trực tiếp (theoGio=true): giờ thực = (ra − vào), nghỉ giữa ca TÍNH VÀO giờ làm
+  // (không trừ), làm tròn XUỐNG bội số 0.5. Trễ/sớm vẫn tính giờ thực (không bị 0). Xem docs/07.
+  if (theoGio) {
+    const phut = (new Date(gioRaISO) - new Date(gioVaoISO)) / 60000;
+    return Math.floor(Math.max(0, phut) / 60 * 2) / 2;
+  }
+
+  // Khối Gián tiếp: trễ/sớm/mất công → 0 giờ (Điều 7.3)
   if (['TRE','SOM','MAT_CONG','VANG_KHONG_PHEP'].includes(trangThai)) return 0;
 
   const gioVao = new Date(gioVaoISO);
   const gioRa  = new Date(gioRaISO);
-
-  // Tổng giờ = (gioRa - gioVao) trừ nghỉ trưa (nếu ca HC)
   let tongPhut = (gioRa - gioVao) / 60000;
 
-  // Nếu ca HC (07:30–17:00) và khoảng thời gian vượt qua khung nghỉ trưa → trừ 90 phút
+  // Ca HC (07:30–17:00): trừ 90 phút nghỉ trưa (11:30–13:00)
   if (ca.gioBatDau === '07:30' && ca.gioKetThuc === '17:00') {
-    const nghiTrua = 90; // 11:30–13:00
-    tongPhut = Math.max(0, tongPhut - nghiTrua);
+    tongPhut = Math.max(0, tongPhut - 90);
   }
 
-  return Math.round(tongPhut / 60 * 10) / 10; // làm tròn 1 chữ số thập phân
+  return Math.round(tongPhut / 60 * 10) / 10;
 }

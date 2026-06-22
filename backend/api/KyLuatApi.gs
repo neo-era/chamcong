@@ -56,6 +56,35 @@ function apiQuetCanhBao(user, body) {
   return { ok: true, data: { soMoi } };
 }
 
+// GET action=getChiTietViPham&maNV=&tuNgay=&denNgay= — NC-J: dữ liệu lập biên bản kỷ luật
+function apiGetChiTietViPham(user, params) {
+  requireQuyen(user, 'XEM_CANH_BAO');
+  const maNV = params.maNV;
+  if (!maNV) throw new Error('Thiếu maNV');
+  const den = params.denNgay || todayStr();
+  const tu  = params.tuNgay  || _truNgay(den, 365);
+  const nv  = getNVByMa(maNV) || {};
+
+  const viPham = getChamCongKhoang(maNV, tu, den)
+    .filter(c => laBoViec(c.trangThai))
+    .map(c => ({ ngay: toDateStr(c.ngay), trangThai: c.trangThai, label: labelTrangThai(c.trangThai) }))
+    .sort((a, b) => a.ngay.localeCompare(b.ngay));
+
+  const nguong = _nguongKyLuat();
+  const homNay = todayStr();
+  const s30  = demBoViecTrongKhoang(getChamCongKhoang(maNV, _truNgay(homNay, 30), homNay));
+  const s365 = demBoViecTrongKhoang(getChamCongKhoang(maNV, _truNgay(homNay, 365), homNay));
+  const muc  = xacDinhMucCanhBao(s30, s365, nguong);
+
+  return { ok: true, data: {
+    maNV: maNV, hoTen: nv.hoTen, donVi: nv.donVi, chucDanh: nv.chucDanh,
+    tuNgay: tu, denNgay: den, viPham: viPham,
+    soNgayBoViec30: s30, soNgayBoViec365: s365, mucCanhBao: muc || '(chưa chạm ngưỡng)',
+    donVi1: getConfig('don_vi_cap1') || 'CÔNG TY CỔ PHẦN CHIẾU SÁNG CÔNG CỘNG TP.HCM',
+    donVi2: getConfig('don_vi_cap2') || 'CHIẾU SÁNG KHU VỰC TRUNG TÂM'
+  } };
+}
+
 // GET action=getCanhBao&donVi=&mucCanhBao=
 function apiGetCanhBao(user, params) {
   requireQuyen(user, 'XEM_CANH_BAO');

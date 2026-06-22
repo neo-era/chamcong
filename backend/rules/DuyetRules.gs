@@ -18,19 +18,25 @@ const TRANG_THAI_DON = {
 const KET_QUA_DUYET = ['Duyệt', 'Từ chối', 'Yêu cầu bổ sung'];
 
 /**
- * Trả về DANH SÁCH quyền cần có cho từng bước duyệt (1 phần tử = 1 cấp).
- * Số phần tử = số cấp duyệt yêu cầu. quyenChoCap(n) = mảng[n-1].
+ * Trả về danh sách quyền cần có cho từng bước duyệt, dựa vào
+ * vaiTro và khoi của NV TẠO đơn (không phụ thuộc loại đơn).
  *
- * @param {string} loaiDon
- * @param {number} soNgay
- * @param {number} nguongDuyetCapCao  - phép > ngưỡng này phải lên cấp 3
- * @returns {string[]} ví dụ ['DUYET_CAP1','DUYET_CAP2']
+ *   BGD / TruongDonVi     → 1 cấp  ['DUYET_CAP3']
+ *   Gián tiếp (NV / TT)   → 2 cấp  ['DUYET_CAP2', 'DUYET_CAP3']
+ *   Trực tiếp (công nhân) → 3 cấp  ['DUYET_CAP1', 'DUYET_CAP2', 'DUYET_CAP3']
+ *
+ * @param {string} vaiTroNV  vaiTro của người tạo đơn
+ * @param {string} khoiNV    khoi của người tạo đơn ('Gián tiếp' | 'Trực tiếp')
+ * @returns {string[]}
  */
-function capDuyetYeuCau(loaiDon, soNgay, nguongDuyetCapCao) {
-  // BS2 (docs/08): MỌI loại đơn duyệt đủ 3 cấp tuần tự
-  // Cấp 1 = Tổ trưởng → Cấp 2 = Trưởng đơn vị → Cấp 3 = BGĐ/Admin.
-  // (Giữ tham số soNgay/nguongDuyetCapCao để không vỡ chỗ gọi.)
-  return ['DUYET_CAP1', 'DUYET_CAP2', 'DUYET_CAP3'];
+function capDuyetYeuCau(vaiTroNV, khoiNV) {
+  if (['BGD', 'TruongDonVi'].includes(vaiTroNV)) {
+    return ['DUYET_CAP3'];
+  }
+  if (khoiNV === 'Trực tiếp') {
+    return ['DUYET_CAP1', 'DUYET_CAP2', 'DUYET_CAP3'];
+  }
+  return ['DUYET_CAP2', 'DUYET_CAP3']; // NV, ToTruong khối Gián tiếp
 }
 
 // Quyền cần có để duyệt bước thứ `cap` (1-indexed) của một đơn.

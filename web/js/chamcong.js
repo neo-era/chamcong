@@ -6,6 +6,7 @@ function chamCongApp() {
     // State
     loading:     true,
     submitting:  false,
+    refreshing:  false,
     chamCong:    null,   // bản ghi ChamCong hôm nay (null nếu chưa có)
     ca:          null,   // ca làm việc hôm nay
     ngay:        '',
@@ -28,13 +29,8 @@ function chamCongApp() {
     get coTheRa()  { return this.daVao && !this.daRa && !this.submitting; },
 
     get trangThaiLabel() {
-      const map = {
-        'Đủ công': 'badge-success', 'Đi trễ': 'badge-warning',
-        'Về sớm': 'badge-warning',  'Mất công': 'badge-danger',
-        'Vắng có phép': 'badge-info','Vắng không phép': 'badge-danger'
-      };
       const tt = this.chamCong ? this.chamCong.trangThai : '';
-      return { label: tt || '—', cls: map[tt] || 'badge-gray' };
+      return { label: _ttLabel(tt) || '—', cls: _ttBadge(tt) };
     },
 
     get gioVaoFmt() { return this._fmtGio(this.chamCong && this.chamCong.gioVao); },
@@ -149,12 +145,19 @@ function chamCongApp() {
         return d + '/' + m + '/' + y;
       } catch (_) { return str; }
     },
+    async refresh() {
+      if (this.refreshing) return;
+      this.refreshing = true;
+      this._clearMsg();
+      await this.loadHomNay();
+      await this.loadLichSu();
+      this.refreshing = false;
+    },
+
     _clearMsg() { this.errorMsg = ''; this.successMsg = ''; },
 
-    badgeCls(tt) {
-      return { 'Đủ công': 'badge-success','Đi trễ':'badge-warning','Về sớm':'badge-warning',
-               'Mất công':'badge-danger','Vắng có phép':'badge-info','Vắng không phép':'badge-danger' }[tt] || 'badge-gray';
-    }
+    badgeCls(tt) { return _ttBadge(tt); },
+    ttLabel(tt)  { return _ttLabel(tt); }
   };
 }
 
@@ -166,3 +169,14 @@ function _subtractDays(dateStr, days) {
   d.setDate(d.getDate() - days);
   return d.toLocaleDateString('sv-SE');
 }
+
+const _TT_LABEL = {
+  DU_CONG:'Đủ công', TRE:'Đi trễ', SOM:'Về sớm',
+  MAT_CONG:'Mất công', VANG_PHEP:'Vắng có phép', VANG_KHONG_PHEP:'Vắng không phép'
+};
+const _TT_BADGE = {
+  DU_CONG:'badge-success', TRE:'badge-warning', SOM:'badge-warning',
+  MAT_CONG:'badge-danger', VANG_PHEP:'badge-info', VANG_KHONG_PHEP:'badge-danger'
+};
+function _ttLabel(tt) { return _TT_LABEL[tt] || tt || '—'; }
+function _ttBadge(tt) { return _TT_BADGE[tt] || 'badge-gray'; }

@@ -144,8 +144,16 @@
             <input class="form-control" x-model="form.lyDo" placeholder="Lý do nghỉ / làm thêm…">
           </div>
           <div class="form-group" style="grid-column:1 / -1;">
-            <label class="form-label">Đính kèm (URL minh chứng — tuỳ chọn)</label>
-            <input class="form-control" x-model="form.dinhKem" placeholder="Link Google Drive / ảnh giấy tờ">
+            <label class="form-label">Đính kèm minh chứng (tuỳ chọn)</label>
+            <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;">
+              <input class="form-control" style="flex:1;min-width:180px;" x-model="form.dinhKem" placeholder="Dán link, hoặc tải file →">
+              <label class="btn btn-ghost" style="cursor:pointer;white-space:nowrap;">
+                <span x-show="!uploading">📎 Tải file</span>
+                <span x-show="uploading"><span class="spinner"></span> Đang tải…</span>
+                <input type="file" @change="uploadFile($event)" style="display:none;" :disabled="uploading">
+              </label>
+            </div>
+            <a x-show="form.dinhKem" :href="form.dinhKem" target="_blank" style="font-size:.78rem;word-break:break-all;" x-text="form.dinhKem"></a>
           </div>
         </div>
         <p style="font-size:.85rem;color:var(--gray-6);margin-top:.5rem;">

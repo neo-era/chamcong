@@ -10,6 +10,7 @@ function donTuApp() {
   return {
     loading:    true,
     submitting: false,
+    uploading:  false,
     danhSach:   [],
     loaiDonList: LOAI_DON_LIST,
     errorMsg:   '',
@@ -129,6 +130,28 @@ function donTuApp() {
 
     inDon(don) {
       window.open('in-don.html?maDon=' + encodeURIComponent(don.maDon), '_blank');
+    },
+
+    // NC-I: tải file minh chứng lên Drive → lưu URL vào form.dinhKem
+    async uploadFile(e) {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      if (f.size > 8 * 1024 * 1024) { this.errorMsg = 'File quá lớn (tối đa 8MB)'; return; }
+      this.uploading = true; this.errorMsg = '';
+      try {
+        const base64 = await this._toBase64(f);
+        const r = await Api.uploadDinhKem({ tenFile: f.name, mime: f.type, base64 });
+        this.form.dinhKem = r.data.url;
+      } catch (err) { this.errorMsg = 'Lỗi tải file: ' + err.message; }
+      finally { this.uploading = false; }
+    },
+    _toBase64(file) {
+      return new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(String(r.result).split(',')[1]);
+        r.onerror = rej;
+        r.readAsDataURL(file);
+      });
     },
 
     // ── Utilities ───────────────────────────────────────────────────────────────

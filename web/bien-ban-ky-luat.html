@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Biên bản kỷ luật — CSCC</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Times New Roman', Times, serif; color: #000; background: #f3f4f6; margin: 0; padding: 1rem; }
+    .toolbar { max-width: 800px; margin: 0 auto .8rem; display: flex; gap: .5rem; }
+    .toolbar button { padding: .5rem 1rem; border: 1px solid #999; border-radius: .4rem; cursor: pointer; font-size: .9rem; }
+    .toolbar .pri { background: #1a56db; color: #fff; border-color: #1a56db; }
+    .sheet { max-width: 800px; margin: 0 auto; background: #fff; padding: 32px 40px; min-height: 60vh; box-shadow: 0 2px 10px rgba(0,0,0,.12); }
+    .header2 { display: flex; justify-content: space-between; gap: 1rem; text-align: center; font-size: 13px; }
+    .header2 .org { width: 48%; } .header2 .quoc { width: 52%; }
+    .header2 .b { font-weight: 700; } .header2 .u { font-weight: 700; text-decoration: underline; }
+    h1 { text-align: center; font-size: 18px; margin: 22px 0 4px; }
+    table.info { width: 100%; border-collapse: collapse; font-size: 15px; margin: 6px 0; }
+    table.info td, table.info th { padding: 5px 6px; vertical-align: top; }
+    table.info td.lbl { color: #333; white-space: nowrap; width: 1%; }
+    .cam { font-style: italic; font-size: 13px; text-align: center; }
+    .ngay { text-align: right; font-style: italic; margin: 16px 0 6px; }
+    .sigs { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; margin-top: 8px; }
+    .sig { flex: 1 1 30%; min-width: 150px; text-align: center; margin-bottom: 14px; }
+    .sig-role { font-weight: 700; } .sig-note { font-size: 12px; font-style: italic; color: #555; } .sig-space { height: 64px; }
+    @media print { body { background: #fff; padding: 0; } .no-print { display: none !important; } .sheet { box-shadow: none; max-width: none; padding: 0; } }
+  </style>
+</head>
+<body>
+  <div class="toolbar no-print">
+    <button class="pri" onclick="window.print()">🖨 In / Lưu PDF</button>
+    <button onclick="window.close()">Đóng</button>
+    <span style="font-size:.82rem;color:#666;align-self:center;">Hệ thống chỉ cảnh báo — quyết định kỷ luật theo trình tự luật định.</span>
+  </div>
+  <div class="sheet"><div id="bb-content">Đang tải…</div></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/bienban.js"></script>
+</body>
+</html>

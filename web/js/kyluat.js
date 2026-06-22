@@ -49,6 +49,10 @@ function kyLuatApp() {
       finally { this.submitting = false; }
     },
 
+    lapBienBan(cb) {
+      window.open('bien-ban-ky-luat.html?maNV=' + encodeURIComponent(cb.maNV), '_blank');
+    },
+
     mucBadge(muc) {
       return { 'Khiển trách': 'badge-warning', 'Kéo dài nâng lương': 'badge-warning', 'Sa thải': 'badge-danger' }[muc] || 'badge-gray';
     },

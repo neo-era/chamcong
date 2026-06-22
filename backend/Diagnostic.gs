@@ -75,3 +75,36 @@ function kiemTraNhanVien() {
 
   L('========================================================');
 }
+
+// Kiểm tra SESSION_SECRET và thử tạo/xác minh token
+function kiemTraAuth() {
+  const L = msg => Logger.log(msg);
+  L('================ KIỂM TRA AUTH ================');
+
+  const secret = PropertiesService.getScriptProperties().getProperty('SESSION_SECRET');
+  if (!secret) {
+    L('❌ SESSION_SECRET CHƯA ĐƯỢC ĐẶT!');
+    L('   → Vào Project Settings → Script Properties → thêm SESSION_SECRET');
+    return;
+  }
+  if (secret === 'CSCC_CHAMCONG_DEFAULT_2026') {
+    L('⚠️  SESSION_SECRET đang dùng giá trị mặc định — nên đổi thành chuỗi bí mật riêng!');
+  } else {
+    L('✅ SESSION_SECRET đã đặt (' + secret.length + ' ký tự)');
+  }
+
+  // Thử tạo token giả và xác minh
+  try {
+    const tokenTest = _createToken('test@cscc.vn');
+    const user = _verifyToken(tokenTest);
+    L('✅ Tạo token OK — email giải mã được: ' + (user ? user.email || 'test@cscc.vn' : 'lỗi'));
+  } catch (e) {
+    if (e.message.includes('không tồn tại')) {
+      L('✅ Token hợp lệ, chữ ký HMAC đúng (lỗi dự kiến: email test không có trong sheet)');
+    } else {
+      L('❌ Lỗi token: ' + e.message);
+    }
+  }
+
+  L('================================================');
+}

@@ -12,8 +12,8 @@ function _danhSachNgayLe() {
 
 // Thông tin tiến trình duyệt của 1 đơn
 function _thongTinDuyet(don) {
-  const nguong   = getConfigNumber('nguong_duyet_cap_cao', 2);
-  const yeuCau   = capDuyetYeuCau(don.loaiDon, Number(don.soNgay), nguong);
+  const nv       = getNVByMa(don.maNV) || {};
+  const yeuCau   = capDuyetYeuCau(nv.vaiTro || 'NV', nv.khoi || 'Gián tiếp');
   const buoc     = getBuocDuyetCuaDon(don.maDon);
   const soDuyet  = buoc.filter(b => b.ketQua === 'Duyệt').length;
   const capHienTai = soDuyet + 1;

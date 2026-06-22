@@ -28,5 +28,10 @@
 | NC-I | Đính kèm file thật | Upload file lên Drive (thay vì chỉ URL). Dùng scope drive đã có. |
 | NC-J | Biên bản kỷ luật (Điều 28) | Sinh biên bản in từ CanhBaoKyLuat (liệt kê ngày bỏ việc). |
 
+## 🔵 Chấm công nâng cao
+| Mã | Tính năng | Ghi chú |
+|----|-----------|---------|
+| NC-K | Chấm vào/ra nhiều lần trong ca (tối đa 3 lần) | Dành cho khối Trực tiếp đi hiện trường nhiều chuyến. Schema: thêm cột `lan` vào ChamCong → nhiều dòng/ca thay vì 1 dòng. Tổng giờ = Σ(gioRa − gioVao). Gián tiếp vẫn 1 dòng/ngày (dùng đơn Ra ngoài). Scope thay đổi: schema + 5-6 API + bảng công + frontend. |
+
 ## Thứ tự đề nghị
 NC-A → NC-C → NC-D → NC-E → NC-G → (còn lại tuỳ nhu cầu).

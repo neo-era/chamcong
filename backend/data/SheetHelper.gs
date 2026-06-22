@@ -36,7 +36,7 @@ function sheetToObjects(sh) {
   return data.slice(1).map(row => {
     const obj = {};
     headers.forEach((h, i) => {
-      obj[h] = row[i] instanceof Date ? row[i].toISOString() : row[i];
+      obj[h] = row[i] instanceof Date ? _fmtDateCell(row[i]) : row[i];
     });
     return obj;
   });
@@ -50,15 +50,26 @@ function findRow(sh, colName, val) {
   const colIdx = headers.indexOf(colName);
   if (colIdx === -1) return null;
   for (let i = 1; i < data.length; i++) {
-    if (String(data[i][colIdx]) === String(val)) {
+    const cellVal = data[i][colIdx] instanceof Date ? _fmtDateCell(data[i][colIdx]) : data[i][colIdx];
+    if (String(cellVal) === String(val)) {
       const obj = {};
       headers.forEach((h, j) => {
-        obj[h] = data[i][j] instanceof Date ? data[i][j].toISOString() : data[i][j];
+        obj[h] = data[i][j] instanceof Date ? _fmtDateCell(data[i][j]) : data[i][j];
       });
       return { row: i + 1, obj, headers };
     }
   }
   return null;
+}
+
+// Chuyển Date cell từ Google Sheets sang chuỗi đúng múi giờ VN.
+// - Time-only cell (gioBatDau/gioKetThuc): Sheets lưu với base date 1899-12-30 → "HH:mm"
+// - Date cell (ngay, ngayVaoLam…): lấy theo giờ VN để tránh lệch ngày UTC vs +7
+function _fmtDateCell(d) {
+  if (d.getFullYear() <= 1900) {
+    return Utilities.formatDate(d, 'Asia/Ho_Chi_Minh', 'HH:mm');
+  }
+  return Utilities.formatDate(d, 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd');
 }
 
 // Thêm dòng mới theo thứ tự headers

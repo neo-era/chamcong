@@ -16,7 +16,7 @@
 | **GĐ4** | Cảnh báo kỷ luật + Quản trị | ✅ Hoàn chỉnh (P3). Cửa sổ trượt 30/365, quét cảnh báo + trigger, trang Cảnh báo KL + Quản trị (sửa CauHinh, xem AuditLog). |
 | **BS** | Chấm công khối Trực tiếp theo giờ | ✅ Hoàn chỉnh (docs/07). Trực tiếp: trễ/sớm chỉ trừ giờ, không kỷ luật; cột soGioCong; bảng công "N·8" + Tổng giờ. |
 | **BS2** | Duyệt mọi đơn đủ 3 cấp (1→2→3) | ✅ Hoàn chỉnh (docs/08). Mọi loại đơn: Tổ trưởng → Trưởng đơn vị → BGĐ/Admin. |
-| **NC** | Backlog nâng cao & tuân thủ | ⏳ Đã lập kế hoạch (docs/09 + PHASE NC). Bảo mật (đổi MK lần đầu, khoá login), trần OT, định mức việc riêng, thông báo, dashboard, tối ưu, PWA, đính kèm, biên bản KL. CHƯA code. |
+| **NC** | Nâng cao & tuân thủ (NC-A..J) | ✅ Hoàn chỉnh. Đổi MK lần đầu, khoá login, trần OT, định mức việc riêng, thông báo (chuông), dashboard, tối ưu (cache), PWA, đính kèm file, biên bản kỷ luật. |
 
 Thứ tự thực thi đề nghị: **P0 → P1 → P2 → P3 → P4** (mỗi P = một phase bên dưới). **PHASE BS** làm sau cùng (bổ sung).
 

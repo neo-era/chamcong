@@ -74,7 +74,7 @@
       <a href="#doimk">2. Đổi mật khẩu</a>
       <a href="#vaitro">3. Vai trò &amp; phân quyền</a>
       <a href="#thongbao">4. Thông báo</a>
-      <a href="#chamcong">5. Chấm công</a>
+      <a href="#chamcong">5. Chấm công (Gián tiếp vs Trực tiếp)</a>
       <a href="#dontu">6. Đơn từ</a>
       <a href="#duyet">7. Duyệt đơn</a>
       <a href="#phanca">8. Phân ca</a>
@@ -153,33 +153,97 @@
 
     <!-- 5 -->
     <h2 id="chamcong">5. Chấm công hằng ngày</h2>
-    <h3>5.1 Chấm vào / ra</h3>
+    <h3>5.1 Hai khối nhân sự — cách tính công khác nhau</h3>
+    <table>
+      <thead><tr><th></th><th>Khối Gián tiếp</th><th>Khối Trực tiếp</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Gồm ai</strong></td>
+          <td>Văn phòng, kế toán, kỹ thuật VP</td>
+          <td>Công nhân vận hành, bảo trì ngoài hiện trường</td>
+        </tr>
+        <tr>
+          <td><strong>Ca làm</strong></td>
+          <td>CA_HC cố định (07:30–17:00, T2–T7)</td>
+          <td>Ca xoay vòng (CA_SANG, CA_CHIEU, CA_DEM)</td>
+        </tr>
+        <tr>
+          <td><strong>Đơn vị tính công</strong></td>
+          <td>Ngày (đủ công / mất công)</td>
+          <td>Số giờ thực tế (Σ giờ làm trong ca)</td>
+        </tr>
+        <tr>
+          <td><strong>Đi trễ / về sớm</strong></td>
+          <td>❌ Mất công <strong>cả ngày</strong> (Điều 7.3)</td>
+          <td>Chỉ trừ đúng số giờ thiếu, không mất cả ngày</td>
+        </tr>
+        <tr>
+          <td><strong>Trạng thái có thể có</strong></td>
+          <td>Đủ công / Trễ / Sớm / Mất công / Vắng phép / Vắng KP</td>
+          <td>Đủ công / Mất công / Vắng phép / Vắng KP<br><em>(không có Trễ / Sớm)</em></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="tip">💡 Khối của bạn được HR/Admin gán khi tạo tài khoản. Bạn có thể xem trong trang <strong>Hồ sơ cá nhân</strong>.</div>
+
+    <h3>5.2 Chấm vào / ra</h3>
     <ul>
       <li>Đầu ca: bấm <strong>▶ CHẤM CÔNG VÀO</strong>. Cuối ca: bấm <strong>■ CHẤM CÔNG RA</strong>.</li>
       <li>Giờ chấm công lấy từ <strong>máy chủ</strong> — không thể điều chỉnh phía người dùng.</li>
       <li>Mỗi ngày chỉ chấm vào/ra <strong>một lần</strong>; chỉ HR/Admin được sửa lại (xem mục 11).</li>
     </ul>
-    <h3>5.2 Chấm công kèm GPS (làm hiện trường)</h3>
+    <h3>5.3 Chấm công kèm GPS (làm hiện trường)</h3>
     <ul>
       <li>Bật công tắc <strong>Kèm toạ độ GPS</strong> trước khi bấm chấm công.</li>
       <li>Trình duyệt sẽ hỏi quyền truy cập vị trí — bấm <strong>Cho phép</strong>.</li>
       <li>Toạ độ lat/lng ghi kèm vào bản ghi chấm công.</li>
     </ul>
-    <h3>5.3 Trạng thái chấm công</h3>
+    <h3>5.4 Trạng thái chấm công</h3>
     <table>
-      <thead><tr><th>Trạng thái</th><th>Ý nghĩa</th><th>Tính công</th></tr></thead>
+      <thead><tr><th>Trạng thái</th><th>Ý nghĩa</th><th>Tính công</th><th>Áp dụng</th></tr></thead>
       <tbody>
-        <tr><td><span class="badge-sm badge-ok">Đủ công</span></td><td>Vào đúng giờ, ra đúng giờ</td><td>✅ 1 công</td></tr>
-        <tr><td><span class="badge-sm badge-warn">Trễ</span></td><td>Vào muộn hơn giờ bắt đầu ca</td><td>❌ Mất công cả ngày (Điều 7.3)</td></tr>
-        <tr><td><span class="badge-sm badge-warn">Sớm</span></td><td>Ra sớm hơn giờ kết thúc ca</td><td>❌ Mất công cả ngày (Điều 7.3)</td></tr>
-        <tr><td><span class="badge-sm badge-err">Mất công</span></td><td>Không chấm vào</td><td>❌ 0 công</td></tr>
-        <tr><td><span class="badge-sm" style="background:#ede9fe;color:#6d28d9;">Vắng phép</span></td><td>Có đơn phép được duyệt</td><td>Theo loại đơn</td></tr>
-        <tr><td><span class="badge-sm badge-err">Vắng KP</span></td><td>Vắng không có lý do / không duyệt</td><td>❌ Cộng vào ngày bỏ việc</td></tr>
+        <tr>
+          <td><span class="badge-sm badge-ok">Đủ công</span></td>
+          <td>Vào đúng giờ, ra đúng giờ</td>
+          <td>✅ 1 công (hoặc đủ số giờ)</td>
+          <td>Cả hai khối</td>
+        </tr>
+        <tr>
+          <td><span class="badge-sm badge-warn">Trễ</span></td>
+          <td>Vào muộn hơn giờ bắt đầu ca</td>
+          <td>❌ Mất công cả ngày (Điều 7.3)</td>
+          <td><strong>Gián tiếp</strong></td>
+        </tr>
+        <tr>
+          <td><span class="badge-sm badge-warn">Sớm</span></td>
+          <td>Ra sớm hơn giờ kết thúc ca</td>
+          <td>❌ Mất công cả ngày (Điều 7.3)</td>
+          <td><strong>Gián tiếp</strong></td>
+        </tr>
+        <tr>
+          <td><span class="badge-sm badge-err">Mất công</span></td>
+          <td>Không chấm vào</td>
+          <td>❌ 0 công</td>
+          <td>Cả hai khối</td>
+        </tr>
+        <tr>
+          <td><span class="badge-sm" style="background:#ede9fe;color:#6d28d9;">Vắng phép</span></td>
+          <td>Có đơn phép được duyệt</td>
+          <td>Theo loại đơn</td>
+          <td>Cả hai khối</td>
+        </tr>
+        <tr>
+          <td><span class="badge-sm badge-err">Vắng KP</span></td>
+          <td>Vắng không có lý do / không duyệt</td>
+          <td>❌ Cộng vào ngày bỏ việc</td>
+          <td>Cả hai khối</td>
+        </tr>
       </tbody>
     </table>
-    <div class="warn">🚨 <strong>Điều 7.3 NQLĐ:</strong> Đi <strong>trễ</strong> hoặc về <strong>sớm</strong> — dù chỉ 1 phút — bị tính <strong>mất công cả ngày</strong>, không phải chỉ trừ vài phút. Cộng dồn vào ngưỡng kỷ luật.</div>
-    <h3>5.4 Lịch sử chấm công</h3>
-    <p>Bảng <strong>7 ngày gần nhất</strong> hiển thị ngay dưới nút chấm công, bao gồm ca, giờ vào/ra và trạng thái.</p>
+    <div class="warn">🚨 <strong>Điều 7.3 NQLĐ (áp dụng khối Gián tiếp):</strong> Đi <strong>trễ</strong> hoặc về <strong>sớm</strong> — dù chỉ 1 phút — bị tính <strong>mất công cả ngày</strong>, không phải chỉ trừ vài phút. Cộng dồn vào ngưỡng kỷ luật.<br>
+    <strong>Khối Trực tiếp:</strong> đi trễ / về sớm chỉ trừ đúng số giờ thiếu — không áp dụng Điều 7.3.</div>
+    <h3>5.5 Lịch sử chấm công</h3>
+    <p>Bảng <strong>7 ngày gần nhất</strong> hiển thị ngay dưới nút chấm công. Bấm <strong>↻</strong> (góc trên phải card) để làm mới dữ liệu — đặc biệt hữu ích khi dùng trên điện thoại.</p>
 
     <!-- 6 -->
     <h2 id="dontu">6. Đơn từ</h2>

@@ -82,6 +82,7 @@ const Api = {
   getThongBao:        ()           => apiGet('getThongBao'),
   danhDauThongBao:    (data)       => apiPost('danhDauThongBao', data || {}),
   getDashboard:       (p)          => apiGet('getDashboard', p || {}),
+  uploadDinhKem:      (data)       => apiPost('uploadDinhKem', data),
 
   // Phép & Bảng công (GĐ3)
   getSoDuPhep:        (p)          => apiGet('getSoDuPhep', p || {}),
@@ -93,6 +94,7 @@ const Api = {
 
   // Kỷ luật & Quản trị (GĐ4)
   getCanhBao:         (p)          => apiGet('getCanhBao', p || {}),
+  getChiTietViPham:   (p)          => apiGet('getChiTietViPham', p || {}),
   quetCanhBao:        ()           => apiPost('quetCanhBao', {}),
   getAuditLog:        (p)          => apiGet('getAuditLog', p || {}),
   setCauHinh:         (data)       => apiPost('setCauHinh', data),

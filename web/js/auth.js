@@ -182,3 +182,19 @@ function _vaiTroLabel(vaiTro) {
   return { NV:'Nhân viên', ToTruong:'Tổ trưởng', TruongDonVi:'Trưởng đơn vị',
            BGD:'Ban giám đốc', HR:'Nhân sự', Admin:'Quản trị' }[vaiTro] || vaiTro;
 }
+
+// NC-H: PWA — gắn manifest + đăng ký service worker (chạy trên mọi trang có auth.js)
+(function () {
+  try {
+    if (!document.querySelector('link[rel="manifest"]')) {
+      const l = document.createElement('link');
+      l.rel = 'manifest'; l.href = 'manifest.json';
+      document.head.appendChild(l);
+    }
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js').catch(function () {});
+      });
+    }
+  } catch (e) { /* bỏ qua nếu môi trường không hỗ trợ */ }
+})();

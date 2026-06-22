@@ -247,6 +247,24 @@ function apiGetDonChiTiet(user, params) {
   }) };
 }
 
+// POST action=uploadDinhKem  body {tenFile, mime, base64} — NC-I: upload minh chứng lên Drive
+function apiUploadDinhKem(user, body) {
+  requireQuyen(user, 'TAO_DON');
+  if (!body || !body.base64) throw new Error('Thiếu dữ liệu file');
+  const bytes = Utilities.base64Decode(body.base64);
+  if (bytes.length > 8 * 1024 * 1024) throw new Error('File quá lớn (tối đa 8MB)');
+  const blob = Utilities.newBlob(bytes, body.mime || 'application/octet-stream',
+    body.tenFile || ('dinhkem_' + Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'yyyyMMdd_HHmmss')));
+  let folder;
+  const fid = getConfig('drive_folder_dinhkem');
+  try { folder = fid ? DriveApp.getFolderById(fid) : DriveApp.getRootFolder(); }
+  catch (_) { folder = DriveApp.getRootFolder(); }
+  const file = folder.createFile(blob);
+  try { file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (_) {}
+  appendLog(user.maNV, user.email, 'UPLOAD_DINHKEM', 'DonTu', { ten: file.getName() });
+  return { ok: true, data: { url: file.getUrl(), ten: file.getName() } };
+}
+
 // GET action=donChoDuyet — các đơn mà `user` là người duyệt cấp kế tiếp
 function apiDonChoDuyet(user, params) {
   if (!['ToTruong', 'TruongDonVi', 'BGD', 'Admin'].includes(user.vaiTro)) {

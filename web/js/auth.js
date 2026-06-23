@@ -88,18 +88,13 @@ function renderHeader(activePage) {
     el.style.display = roles.includes(vaiTro) ? '' : 'none';
   });
 
-  // Badge số đơn đang chờ chính mình duyệt (số màu đỏ) trên menu "Duyệt đơn".
-  // Bỏ qua khi đang ở chính trang Duyệt đơn (trang đó tự tải danh sách rồi).
-  if (['ToTruong', 'TruongDonVi', 'BGD', 'Admin'].includes(vaiTro) && activePage !== 'duyetdon') {
-    _capNhatBadgeDuyet();
-  }
-
-  _setupThongBao();
+  // NC-G: chuông thông báo + badge đơn chờ duyệt — gộp vào 1 request (getHeaderInfo).
+  _setupHeaderInfo(activePage, vaiTro);
 }
 
-// NC-E: chuông thông báo trên header
-async function _setupThongBao() {
-  if (typeof Api === 'undefined' || !Api.getThongBao) return;
+// NC-E + NC-G: dựng chuông thông báo và badge "Duyệt đơn", tải dữ liệu trong 1 request.
+async function _setupHeaderInfo(activePage, vaiTro) {
+  if (typeof Api === 'undefined' || !Api.getHeaderInfo) return;
   const userInfo = document.querySelector('.app-header .user-info');
   if (!userInfo || document.querySelector('.tb-bell')) return;
 
@@ -126,29 +121,12 @@ async function _setupThongBao() {
       '<div style="font-size:.7rem;color:#888;font-weight:400;">' + fmt(it.thoiDiem) + '</div></a>'
     ).join('');
   }
-  async function load() {
-    try {
-      const r = await Api.getThongBao();
-      const n = (r.data && r.data.soChuaDoc) || 0;
-      countEl.textContent = n; countEl.style.display = n > 0 ? '' : 'none';
-      drop.innerHTML = render((r.data && r.data.items) || []);
-    } catch (_) {}
-  }
-  bell.addEventListener('click', (e) => { e.stopPropagation(); drop.style.display = drop.style.display === 'none' ? 'block' : 'none'; });
-  document.addEventListener('click', () => { drop.style.display = 'none'; });
-  drop.addEventListener('click', (e) => {
-    if (e.target.classList.contains('tb-readall')) { e.preventDefault(); Api.danhDauThongBao({}).then(load); }
-  });
-  load();
-}
 
-async function _capNhatBadgeDuyet() {
-  if (typeof Api === 'undefined' || !Api.donChoDuyet) return;
-  const link = document.querySelector('.nav-links a[data-page="duyetdon"]');
-  if (!link) return;
-  try {
-    const r = await Api.donChoDuyet();
-    const n = (r && r.data) ? r.data.length : 0;
+  // Badge số đơn chờ duyệt — bỏ qua khi đang ở chính trang Duyệt đơn (trang đó tự tải).
+  function applyBadge(n) {
+    const showBadge = ['ToTruong', 'TruongDonVi', 'BGD', 'Admin'].includes(vaiTro) && activePage !== 'duyetdon';
+    const link = document.querySelector('.nav-links a[data-page="duyetdon"]');
+    if (!link || !showBadge) return;
     link.textContent = 'Duyệt đơn';
     if (n > 0) {
       const b = document.createElement('span');
@@ -156,7 +134,25 @@ async function _capNhatBadgeDuyet() {
       b.style.cssText = 'color:#ef4444;font-weight:800;';
       link.appendChild(b);
     }
-  } catch (_) { /* im lặng nếu lỗi mạng */ }
+  }
+
+  async function load(force) {
+    try {
+      const r = await Api.getHeaderInfo(force);
+      const tb = (r.data && r.data.thongBao) || {};
+      const n = tb.soChuaDoc || 0;
+      countEl.textContent = n; countEl.style.display = n > 0 ? '' : 'none';
+      drop.innerHTML = render(tb.items || []);
+      applyBadge((r.data && r.data.soDonChoDuyet) || 0);
+    } catch (_) {}
+  }
+
+  bell.addEventListener('click', (e) => { e.stopPropagation(); drop.style.display = drop.style.display === 'none' ? 'block' : 'none'; });
+  document.addEventListener('click', () => { drop.style.display = 'none'; });
+  drop.addEventListener('click', (e) => {
+    if (e.target.classList.contains('tb-readall')) { e.preventDefault(); Api.danhDauThongBao({}).then(() => load(true)); }
+  });
+  load();
 }
 
 // Thêm nút ☰ mở/đóng menu trên mobile (1 lần)

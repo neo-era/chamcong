@@ -51,6 +51,7 @@ function _routeGet(action, user, params) {
     case 'donChoDuyet':          return apiDonChoDuyet(user, params);
     case 'getDonChiTiet':        return apiGetDonChiTiet(user, params);
     case 'getThongBao':          return apiGetThongBao(user, params);
+    case 'getHeaderInfo':        return apiGetHeaderInfo(user);
     case 'getDashboard':         return apiGetDashboard(user, params);
     case 'getChiTietViPham':     return apiGetChiTietViPham(user, params);
     case 'getSoDuPhep':          return apiGetSoDuPhep(user, params);

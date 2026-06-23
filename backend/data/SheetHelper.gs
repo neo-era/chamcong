@@ -4,8 +4,12 @@
 
 const SPREADSHEET_ID = '1BM8BBQB6Eo3UTztpyvp5SOadSRvgM2PIYp0mVGKwqjA';
 
+// Memo handle trong 1 lần thực thi — tránh openById lặp lại khi 1 request đọc nhiều sheet.
+// An toàn khi instance được tái dùng giữa các request: getValues() luôn lấy dữ liệu sống.
+let _ssMemo = null;
 function getSpreadsheet() {
-  return SpreadsheetApp.openById(SPREADSHEET_ID);
+  if (!_ssMemo) _ssMemo = SpreadsheetApp.openById(SPREADSHEET_ID);
+  return _ssMemo;
 }
 
 function getSheet(name) {

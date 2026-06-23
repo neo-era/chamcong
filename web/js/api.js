@@ -38,6 +38,20 @@ async function _parseResp(resp) {
   return json;
 }
 
+// ── Cache GET phía client (sessionStorage + TTL) ──────────────────────────────
+// Tránh gọi lại Apps Script (~3–6s) cho dữ liệu ít đổi khi chuyển trang.
+function _cacheGet(key, ttlMs) {
+  try {
+    const o = JSON.parse(sessionStorage.getItem('cc_cache_' + key));
+    if (!o || Date.now() - o.t > ttlMs) return null;
+    return o.v;
+  } catch (_) { return null; }
+}
+function _cacheSet(key, val) {
+  try { sessionStorage.setItem('cc_cache_' + key, JSON.stringify({ t: Date.now(), v: val })); } catch (_) {}
+}
+function _cacheClear(key) { try { sessionStorage.removeItem('cc_cache_' + key); } catch (_) {} }
+
 // ── Shorthand helpers ─────────────────────────────────────────────────────────
 const Api = {
   // Auth
@@ -60,10 +74,13 @@ const Api = {
   createNhanVien:     (data)       => apiPost('createNhanVien', data),
   updateNhanVien:     (data)       => apiPost('updateNhanVien', data),
 
-  // Ca
-  getCaList:          ()           => apiGet('getCaList'),
-  createCa:           (data)       => apiPost('createCa', data),
-  updateCa:           (data)       => apiPost('updateCa', data),
+  // Ca (ít đổi → cache 5 phút)
+  getCaList:          async ()     => {
+    const c = _cacheGet('calist', 300000); if (c) return { ok: true, data: c };
+    const r = await apiGet('getCaList'); _cacheSet('calist', r.data); return r;
+  },
+  createCa:           (data)       => apiPost('createCa', data).then(r => { _cacheClear('calist'); return r; }),
+  updateCa:           (data)       => apiPost('updateCa', data).then(r => { _cacheClear('calist'); return r; }),
 
   // Lịch trực
   getLichTrucNgay:    (p)          => apiGet('getLichTrucNgay', p),
@@ -72,15 +89,20 @@ const Api = {
   deleteLichTruc:     (data)       => apiPost('deleteLichTruc', data),
 
   // Đơn từ & duyệt (GĐ2)
-  taoDon:             (data)       => apiPost('taoDon', data),
-  thuHoiDon:          (maDon)      => apiPost('thuHoiDon', { maDon }),
-  suaDonBoSung:       (data)       => apiPost('suaDonBoSung', data),
-  duyetDon:           (data)       => apiPost('duyetDon', data),
+  taoDon:             (data)       => apiPost('taoDon', data).then(r => { _cacheClear('header'); return r; }),
+  thuHoiDon:          (maDon)      => apiPost('thuHoiDon', { maDon }).then(r => { _cacheClear('header'); return r; }),
+  suaDonBoSung:       (data)       => apiPost('suaDonBoSung', data).then(r => { _cacheClear('header'); return r; }),
+  duyetDon:           (data)       => apiPost('duyetDon', data).then(r => { _cacheClear('header'); return r; }),
   danhSachDonCuaToi:  (p)          => apiGet('danhSachDonCuaToi', p || {}),
   donChoDuyet:        (p)          => apiGet('donChoDuyet', p || {}),
   getDonChiTiet:      (maDon)      => apiGet('getDonChiTiet', { maDon }),
   getThongBao:        ()           => apiGet('getThongBao'),
-  danhDauThongBao:    (data)       => apiPost('danhDauThongBao', data || {}),
+  // Gộp chuông + badge duyệt, cache 60s để chuyển trang không gọi lại
+  getHeaderInfo:      async (force) => {
+    if (!force) { const c = _cacheGet('header', 60000); if (c) return { ok: true, data: c }; }
+    const r = await apiGet('getHeaderInfo'); _cacheSet('header', r.data); return r;
+  },
+  danhDauThongBao:    (data)       => apiPost('danhDauThongBao', data || {}).then(r => { _cacheClear('header'); return r; }),
   getDashboard:       (p)          => apiGet('getDashboard', p || {}),
   uploadDinhKem:      (data)       => apiPost('uploadDinhKem', data),
 
@@ -97,8 +119,11 @@ const Api = {
   getChiTietViPham:   (p)          => apiGet('getChiTietViPham', p || {}),
   quetCanhBao:        ()           => apiPost('quetCanhBao', {}),
   getAuditLog:        (p)          => apiGet('getAuditLog', p || {}),
-  setCauHinh:         (data)       => apiPost('setCauHinh', data),
+  setCauHinh:         (data)       => apiPost('setCauHinh', data).then(r => { _cacheClear('cauhinh'); return r; }),
 
-  // CauHinh
-  getCauHinh:         ()           => apiGet('getCauHinh')
+  // CauHinh (ít đổi → cache 5 phút)
+  getCauHinh:         async ()     => {
+    const c = _cacheGet('cauhinh', 300000); if (c) return { ok: true, data: c };
+    const r = await apiGet('getCauHinh'); _cacheSet('cauhinh', r.data); return r;
+  }
 };

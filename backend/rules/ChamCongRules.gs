@@ -104,3 +104,44 @@ function tinhSoGioLam(trangThai, gioVaoISO, gioRaISO, ca, theoGio) {
 
   return Math.round(tongPhut / 60 * 10) / 10;
 }
+
+/**
+ * Cảnh báo trần giờ làm trong ngày (chỉ cảnh báo — không chặn).
+ * @param {number} tongGioNgay - tổng số giờ công đã làm trong ngày (cộng các ca)
+ * @param {number} tranGio     - trần giờ/ngày (CauHinh gio_toi_da_ngay)
+ * @returns {{vuot:boolean, tong:number, tran:number}}
+ */
+function kiemTraTranGioNgay(tongGioNgay, tranGio) {
+  const tran = parseFloat(tranGio) || 12;
+  const tong = Math.round((parseFloat(tongGioNgay) || 0) * 10) / 10;
+  return { vuot: tong > tran, tong: tong, tran: tran };
+}
+
+/**
+ * Tính khoảng nghỉ liên tục DÀI NHẤT (giờ) trong cửa sổ [tuISO, denISO],
+ * dựa trên các khoảng làm việc. Dùng để cảnh báo nghỉ tuần ≥24h (Điều 6.x NQLĐ).
+ * @param {Array<{batDau:string, ketThuc:string}>} cacKhoangLam - ISO string vào/ra
+ * @param {string} tuISO  - đầu cửa sổ (ISO)
+ * @param {string} denISO - cuối cửa sổ (ISO)
+ * @returns {number} số giờ nghỉ liên tục dài nhất
+ */
+function khoangNghiLienTucMax(cacKhoangLam, tuISO, denISO) {
+  const tu  = new Date(tuISO).getTime();
+  const den = new Date(denISO).getTime();
+  if (!(den > tu)) return 0;
+
+  const iv = (cacKhoangLam || [])
+    .map(k => ({ s: new Date(k.batDau).getTime(), e: new Date(k.ketThuc).getTime() }))
+    .filter(k => !isNaN(k.s) && !isNaN(k.e) && k.e > tu && k.s < den)
+    .sort((a, b) => a.s - b.s);
+
+  let prev = tu;
+  let maxGap = 0;
+  iv.forEach(k => {
+    const s = Math.max(k.s, tu);
+    if (s - prev > maxGap) maxGap = s - prev;
+    prev = Math.max(prev, Math.min(k.e, den));
+  });
+  if (den - prev > maxGap) maxGap = den - prev;
+  return Math.round(maxGap / 3600000 * 10) / 10;   // giờ, 1 chữ số thập phân
+}

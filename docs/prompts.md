@@ -17,6 +17,7 @@
 | **BS** | Chấm công khối Trực tiếp theo giờ | ✅ Hoàn chỉnh (docs/07). Trực tiếp: trễ/sớm chỉ trừ giờ, không kỷ luật; cột soGioCong; bảng công "N·8" + Tổng giờ. |
 | **BS2** | Duyệt mọi đơn đủ 3 cấp (1→2→3) | ✅ Hoàn chỉnh (docs/08). Mọi loại đơn: Tổ trưởng → Trưởng đơn vị → BGĐ/Admin. |
 | **NC** | Nâng cao & tuân thủ (NC-A..J) | ✅ Hoàn chỉnh. Đổi MK lần đầu, khoá login, trần OT, định mức việc riêng, thông báo (chuông), dashboard, tối ưu (cache), PWA, đính kèm file, biên bản kỷ luật. |
+| **ĐC** | Chấm công đa ca + cảnh báo trần giờ | ✅ Hoàn chỉnh (docs/10). Khoá (maNV,ngày,maCa); chọn ca khi chấm vào; ca đêm vắt nửa đêm chấm ra theo bản ghi đang mở; cảnh báo tổng >12h/ngày + nghỉ tuần <24h. |
 
 Thứ tự thực thi đề nghị: **P0 → P1 → P2 → P3 → P4** (mỗi P = một phase bên dưới). **PHASE BS** làm sau cùng (bổ sung).
 

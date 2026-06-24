@@ -9,6 +9,12 @@ function getLichTrucNgay(maNV, ngayStr) {
   return list.find(o => o.maNV === maNV && toDateStr(o.ngay) === ngayStr) || null;
 }
 
+// Tất cả ca được phân cho 1 NV trong 1 ngày (đa ca). Trả về mảng bản ghi LichTruc.
+function getLichTrucNgayList(maNV, ngayStr) {
+  const sh = getOrCreateSheet(LT_SHEET, LT_HEADERS);
+  return sheetToObjects(sh).filter(o => o.maNV === maNV && toDateStr(o.ngay) === ngayStr);
+}
+
 // Lịch trực của 1 NV trong 1 tuần (mảng ngày liên tiếp)
 function getLichTrucTuan(maNV, tuanBatDau, tuanKetThuc) {
   const sh = getOrCreateSheet(LT_SHEET, LT_HEADERS);

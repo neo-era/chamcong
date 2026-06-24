@@ -1,12 +1,34 @@
 // ─── ChamCongApi.gs ───────────────────────────────────────────────────────────
 
 // GET action=getChamCongHomNay
+// Hỗ trợ ĐA CA/ngày: trả về danh sách ca được phân hôm nay, các bản ghi đã chấm trong ngày,
+// và bản ghi đang mở (đã vào chưa ra — có thể là ca đêm vắt từ hôm qua).
 function apiGetChamCongHomNay(user) {
   const ngay = todayStr();
-  const cc   = getChamCongNgay(user.maNV, ngay);
-  const lt   = getLichTrucNgay(user.maNV, ngay);
-  const ca   = lt ? getCaByMa(lt.maCa) : getCaMacDinh();
-  return { ok: true, data: { chamCong: cc, ca, ngay } };
+
+  // Ca được phân hôm nay (đa ca). Không có lịch → ca mặc định (khối gián tiếp).
+  const lichCa = getLichTrucNgayList(user.maNV, ngay);
+  let caList = lichCa.map(lt => getCaByMa(lt.maCa)).filter(Boolean);
+  if (!caList.length) { const d = getCaMacDinh(); if (d) caList = [d]; }
+
+  // Các bản ghi chấm công trong ngày (kèm thông tin ca)
+  const records = getChamCongNgayList(user.maNV, ngay)
+    .map(cc => Object.assign({}, cc, { ca: getCaByMa(cc.maCa) || null }));
+
+  // Bản ghi đang mở (gồm ca đêm vắt qua nửa đêm từ hôm trước)
+  const moDangRaw = getChamCongMoDang(user.maNV);
+  const moDang = moDangRaw ? Object.assign({}, moDangRaw, { ca: getCaByMa(moDangRaw.maCa) || null }) : null;
+
+  return {
+    ok: true,
+    data: {
+      ngay,
+      caList,                 // ca phân cho hôm nay
+      records,                // đã chấm trong ngày (đa ca)
+      moDang,                 // ca đang mở cần chấm ra (nếu có)
+      tatCaCa: listCa()       // toàn bộ ca — cho phép chọn khi không có lịch (vd tăng cường)
+    }
+  };
 }
 
 // GET action=getChamCongKhoang&maNV=xxx&tuNgay=yyyy-MM-dd&denNgay=yyyy-MM-dd
@@ -19,50 +41,57 @@ function apiGetChamCongKhoang(user, params) {
   return { ok: true, data: getChamCongKhoang(maNV, tuNgay, denNgay) };
 }
 
-// POST action=chamVao
+// POST action=chamVao  body {maCa?, toaDo?}
+// Đa ca: mỗi ca là 1 bản ghi (maNV, ngày, maCa). Phải chấm RA ca đang mở trước khi vào ca mới.
 function apiChamVao(user, body) {
   requireQuyen(user, 'CHAM_CONG');
-  const ngay  = todayStr(); // Giờ MÁY CHỦ — không tin client
+  const ngay   = todayStr();          // Giờ MÁY CHỦ — không tin client
   const gioVao = new Date();
 
-  const existing = getChamCongNgay(user.maNV, ngay);
-  if (existing && existing.gioVao) {
-    throw new Error('Đã chấm công vào hôm nay lúc ' + _formatGio(existing.gioVao));
+  // Còn ca chưa chấm ra (kể cả ca đêm hôm qua) → bắt chấm ra trước
+  const moDang = getChamCongMoDang(user.maNV);
+  if (moDang) {
+    const caMo = getCaByMa(moDang.maCa);
+    throw new Error('Bạn còn ca chưa chấm ra (' + (caMo ? caMo.tenCa : moDang.maCa) +
+      ' — ngày ' + toDateStr(moDang.ngay) + ', vào lúc ' + _formatGio(moDang.gioVao) +
+      '). Hãy CHẤM RA ca đó trước khi vào ca mới.');
   }
 
-  const lt  = getLichTrucNgay(user.maNV, ngay);
-  const ca  = lt ? getCaByMa(lt.maCa) : getCaMacDinh();
-  if (!ca)  throw new Error('Không có ca làm việc cho hôm nay');
+  // Xác định ca: ưu tiên client chọn; nếu không, suy từ lịch trực hôm nay.
+  let maCa = body.maCa;
+  if (!maCa) {
+    const lich = getLichTrucNgayList(user.maNV, ngay);
+    if (lich.length === 1) maCa = lich[0].maCa;
+    else if (lich.length === 0) { const d = getCaMacDinh(); maCa = d ? d.maCa : null; }
+    else throw new Error('Hôm nay có nhiều ca — vui lòng chọn ca trước khi chấm vào');
+  }
+  const ca = maCa ? getCaByMa(maCa) : null;
+  if (!ca) throw new Error('Không xác định được ca làm việc');
+
+  // Đã chấm vào ca này trong ngày chưa (không cho chấm lại cùng ca/ngày)
+  const trung = getChamCongNgayCa(user.maNV, ngay, ca.maCa);
+  if (trung && trung.gioVao) {
+    throw new Error('Đã chấm vào ca ' + ca.tenCa + ' hôm nay lúc ' + _formatGio(trung.gioVao));
+  }
 
   const grace     = getConfigNumber('grace_minutes', 0);
   const theoGio   = (user.khoi === 'Trực tiếp');   // khối trực tiếp tính theo giờ
   const trangThai = tinhTrangThaiCong(gioVao.toISOString(), null, ca, grace, theoGio);
   const nguon     = body.toaDo ? 'GPS hiện trường' : 'Trụ sở';
-  const maCC      = genMaCC(user.maNV, ngay);
+  const maCC      = genMaCC(user.maNV, ngay, ca.maCa);
 
-  if (existing) {
-    updateChamCong(maCC, { gioVao: gioVao.toISOString(), nguon, toaDo: body.toaDo || '', trangThai, soGioCong: 0 });
-  } else {
-    saveChamCong({
-      maCC,
-      maNV:     user.maNV,
-      ngay,
-      maCa:     ca.maCa,
-      gioVao:   gioVao.toISOString(),
-      gioRa:    '',
-      nguon,
-      toaDo:    body.toaDo || '',
-      trangThai,
-      soGioCong: 0
-    });
-  }
+  saveChamCong({
+    maCC, maNV: user.maNV, ngay, maCa: ca.maCa,
+    gioVao: gioVao.toISOString(), gioRa: '',
+    nguon, toaDo: body.toaDo || '', trangThai, soGioCong: 0
+  });
 
-  appendLog(user.maNV, user.email, 'CHAM_VAO', 'ChamCong', { maCC, ngay, trangThai, nguon });
+  appendLog(user.maNV, user.email, 'CHAM_VAO', 'ChamCong', { maCC, ngay, maCa: ca.maCa, trangThai, nguon });
 
   return {
     ok: true,
     data: {
-      maCC,
+      maCC, maCa: ca.maCa, tenCa: ca.tenCa,
       gioVao:      gioVao.toISOString(),
       trangThai,
       trangThaiLabel: labelTrangThai(trangThai),
@@ -71,45 +100,75 @@ function apiChamVao(user, body) {
   };
 }
 
-// POST action=chamRa
+// POST action=chamRa  body {toaDo?}
+// Chấm ra bản ghi ĐANG MỞ gần nhất (không phụ thuộc ngày lịch → ca đêm vắt qua nửa đêm OK).
 function apiChamRa(user, body) {
   requireQuyen(user, 'CHAM_CONG');
-  const ngay  = todayStr();
   const gioRa = new Date(); // Giờ MÁY CHỦ
 
-  const existing = getChamCongNgay(user.maNV, ngay);
-  if (!existing || !existing.gioVao) throw new Error('Chưa chấm công vào hôm nay');
-  if (existing.gioRa) {
-    throw new Error('Đã chấm công ra hôm nay lúc ' + _formatGio(existing.gioRa));
-  }
+  const open = getChamCongMoDang(user.maNV);
+  if (!open) throw new Error('Không có ca nào đang mở để chấm ra');
 
-  const ca    = getCaByMa(existing.maCa) || getCaMacDinh();
+  const ca    = getCaByMa(open.maCa) || getCaMacDinh();
   const grace = getConfigNumber('grace_minutes', 0);
   const theoGio   = (user.khoi === 'Trực tiếp');
-  const trangThai = tinhTrangThaiCong(existing.gioVao, gioRa.toISOString(), ca, grace, theoGio);
-  const soGioCong = tinhSoGioLam(trangThai, existing.gioVao, gioRa.toISOString(), ca, theoGio);
+  const trangThai = tinhTrangThaiCong(open.gioVao, gioRa.toISOString(), ca, grace, theoGio);
+  const soGioCong = tinhSoGioLam(trangThai, open.gioVao, gioRa.toISOString(), ca, theoGio);
 
-  updateChamCong(existing.maCC, {
+  updateChamCong(open.maCC, {
     gioRa:    gioRa.toISOString(),
     trangThai,
     soGioCong,
-    toaDo:    body.toaDo ? (existing.toaDo || '') + '|Ra:' + body.toaDo : existing.toaDo
+    toaDo:    body.toaDo ? (open.toaDo || '') + '|Ra:' + body.toaDo : open.toaDo
   });
 
   appendLog(user.maNV, user.email, 'CHAM_RA', 'ChamCong', {
-    maCC: existing.maCC, ngay, trangThai
+    maCC: open.maCC, ngay: toDateStr(open.ngay), trangThai, soGioCong
   });
+
+  // ── Cảnh báo trần giờ (chỉ cảnh báo — không chặn) ──────────────────────────
+  const canhBao = [];
+  const ngayBG  = toDateStr(open.ngay);
+
+  // (1) Tổng giờ trong ngày vượt trần (đọc lại sheet → đã gồm bản ghi vừa cập nhật)
+  const tongNgay = getChamCongNgayList(user.maNV, ngayBG)
+    .reduce((s, r) => s + (Number(r.soGioCong) || 0), 0);
+  const tg = kiemTraTranGioNgay(tongNgay, getConfigNumber('gio_toi_da_ngay', 12));
+  if (tg.vuot) {
+    canhBao.push('Tổng giờ làm ngày ' + _fmtNgayVN(ngayBG) + ' là ' + tg.tong + 'h, vượt trần ' + tg.tran + 'h/ngày.');
+  }
+
+  // (2) Nghỉ tuần: khoảng nghỉ liên tục dài nhất trong 7 ngày gần nhất
+  const denMs  = gioRa.getTime();
+  const tuMs   = denMs - 7 * 24 * 3600 * 1000;
+  const tuDate = Utilities.formatDate(new Date(tuMs), 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd');
+  const khoangLam = getChamCongKhoang(user.maNV, tuDate, ngayBG)
+    .filter(r => r.gioVao && r.gioRa)
+    .map(r => ({ batDau: r.gioVao, ketThuc: r.gioRa }));
+  const nghiMax  = khoangNghiLienTucMax(khoangLam, new Date(tuMs).toISOString(), gioRa.toISOString());
+  const nguongNghi = getConfigNumber('nghi_tuan_toi_thieu_gio', 24);
+  if (nghiMax < nguongNghi) {
+    canhBao.push('7 ngày gần nhất chưa có kỳ nghỉ liên tục ≥' + nguongNghi + 'h (dài nhất ' + nghiMax + 'h). Cần bố trí nghỉ tuần.');
+  }
 
   return {
     ok: true,
     data: {
-      maCC:          existing.maCC,
+      maCC:          open.maCC,
       gioRa:         gioRa.toISOString(),
+      soGioCong,
       trangThai,
       trangThaiLabel: labelTrangThai(trangThai),
-      laCanhBao:     trangThai === 'SOM'
+      laCanhBao:     trangThai === 'SOM',
+      canhBao                      // mảng chuỗi cảnh báo trần giờ (có thể rỗng)
     }
   };
+}
+
+// Định dạng ngày VN dd/MM/yyyy từ chuỗi yyyy-MM-dd
+function _fmtNgayVN(ngayStr) {
+  const p = String(ngayStr).substring(0, 10).split('-');
+  return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : ngayStr;
 }
 
 // POST action=suaChamCong — HR/Admin only; BẮT BUỘC có lyDo; ghi AuditLog

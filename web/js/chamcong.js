@@ -1,5 +1,7 @@
 // ─── chamcong.js ──────────────────────────────────────────────────────────────
 // Alpine.js data function cho trang chamcong.html
+// Hỗ trợ ĐA CA/ngày: chọn ca khi chấm vào, chấm ra ca đang mở (kể cả ca đêm vắt nửa đêm),
+// và cảnh báo trần giờ (>12h/ngày, nghỉ tuần <24h).
 
 function chamCongApp() {
   return {
@@ -7,40 +9,40 @@ function chamCongApp() {
     loading:     true,
     submitting:  false,
     refreshing:  false,
-    chamCong:    null,   // bản ghi ChamCong hôm nay (null nếu chưa có)
-    ca:          null,   // ca làm việc hôm nay
     ngay:        '',
     user:        null,
+
+    caList:      [],     // ca được phân hôm nay
+    tatCaCa:     [],     // toàn bộ ca (cho phép chọn khi không có lịch — vd tăng cường)
+    records:     [],     // các bản ghi đã chấm trong ngày (đa ca)
+    moDang:      null,   // ca đang mở (đã vào chưa ra) — có thể là ca đêm hôm qua
+    selectedCa:  '',     // maCa người dùng chọn để chấm vào
+
     danhSachCC:  [],     // lịch sử (7 ngày)
+    canhBaoList: [],     // cảnh báo trần giờ sau khi chấm ra
 
     // GPS
     gpsEnabled:  false,
     gpsLoading:  false,
-    toaDo:       null,   // { lat, lng } hoặc null
+    toaDo:       null,
 
     // Messages
     errorMsg:    '',
     successMsg:  '',
 
     // ── Computed ─────────────────────────────────────────────────────────────
-    get daVao()    { return !!(this.chamCong && this.chamCong.gioVao); },
-    get daRa()     { return !!(this.chamCong && this.chamCong.gioRa); },
-    get coTheVao() { return !this.daVao && !this.submitting; },
-    get coTheRa()  { return this.daVao && !this.daRa && !this.submitting; },
-
-    get trangThaiLabel() {
-      const tt = this.chamCong ? this.chamCong.trangThai : '';
-      return { label: _ttLabel(tt) || '—', cls: _ttBadge(tt) };
+    // Danh sách ca chọn được khi chấm vào: ưu tiên ca phân hôm nay, không có → toàn bộ ca.
+    get caOptions() {
+      return (this.caList && this.caList.length) ? this.caList : (this.tatCaCa || []);
     },
-
-    get gioVaoFmt() { return this._fmtGio(this.chamCong && this.chamCong.gioVao); },
-    get gioRaFmt()  { return this._fmtGio(this.chamCong && this.chamCong.gioRa); },
+    get coTheVao() { return !this.moDang && !this.submitting && this.caOptions.length > 0; },
+    get coTheRa()  { return !!this.moDang && !this.submitting; },
+    get caDangMo() { return this.moDang ? (this.moDang.ca || null) : null; },
 
     // ── Khởi tạo ─────────────────────────────────────────────────────────────
     async init() {
       if (!requireLogin('index.html')) return;
       this.user = getCurrentUser();
-      // Lấy thông tin NV đầy đủ từ backend (có vaiTro)
       try {
         const r = await Api.getProfile();
         Object.assign(this.user, r.data);
@@ -55,10 +57,17 @@ function chamCongApp() {
 
     async loadHomNay() {
       try {
-        const r     = await Api.getChamCongHomNay();
-        this.chamCong = r.data.chamCong;
-        this.ca       = r.data.ca;
-        this.ngay     = r.data.ngay;
+        const r = await Api.getChamCongHomNay();
+        this.ngay    = r.data.ngay;
+        this.caList  = r.data.caList  || [];
+        this.tatCaCa = r.data.tatCaCa || [];
+        this.records = r.data.records || [];
+        this.moDang  = r.data.moDang  || null;
+        // Mặc định chọn ca đầu tiên còn chưa chấm (nếu có)
+        if (!this.selectedCa && this.caOptions.length) {
+          const chuaCham = this.caOptions.find(c => !this._daChamCa(c.maCa));
+          this.selectedCa = (chuaCham || this.caOptions[0]).maCa;
+        }
       } catch (e) { this.errorMsg = e.message; }
     },
 
@@ -67,26 +76,28 @@ function chamCongApp() {
         const den = this.ngay || _todayStr();
         const tu  = _subtractDays(den, 6);
         const r   = await Api.getChamCongKhoang({ tuNgay: tu, denNgay: den });
-        this.danhSachCC = r.data.sort((a, b) => b.ngay.localeCompare(a.ngay));
+        this.danhSachCC = r.data.sort((a, b) =>
+          (b.ngay.localeCompare(a.ngay)) || String(b.gioVao).localeCompare(String(a.gioVao)));
       } catch (_) { /* lịch sử không quan trọng */ }
+    },
+
+    // Đã có bản ghi đã-vào cho ca này trong ngày chưa
+    _daChamCa(maCa) {
+      return this.records.some(r => String(r.maCa) === String(maCa) && r.gioVao);
     },
 
     // ── GPS ──────────────────────────────────────────────────────────────────
     async toggleGPS() {
-      if (this.gpsEnabled) {
-        this.gpsEnabled = false; this.toaDo = null; return;
-      }
-      if (!navigator.geolocation) {
-        this.errorMsg = 'Trình duyệt không hỗ trợ GPS'; return;
-      }
+      if (this.gpsEnabled) { this.gpsEnabled = false; this.toaDo = null; return; }
+      if (!navigator.geolocation) { this.errorMsg = 'Trình duyệt không hỗ trợ GPS'; return; }
       this.gpsLoading = true;
       try {
         const pos = await new Promise((res, rej) =>
           navigator.geolocation.getCurrentPosition(res, rej, { timeout: 10000 })
         );
-        this.toaDo     = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        this.toaDo      = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         this.gpsEnabled = true;
-        this.errorMsg  = '';
+        this.errorMsg   = '';
       } catch (e) {
         this.errorMsg = 'Không lấy được vị trí GPS: ' + (e.message || 'Bị từ chối');
       } finally { this.gpsLoading = false; }
@@ -94,18 +105,21 @@ function chamCongApp() {
 
     // ── Chấm vào ─────────────────────────────────────────────────────────────
     async chamVao() {
-      this._clearMsg(); this.submitting = true;
+      this._clearMsg(); this.canhBaoList = [];
+      let maCa = this.selectedCa;
+      if (!maCa && this.caOptions.length === 1) maCa = this.caOptions[0].maCa;
+      if (!maCa) { this.errorMsg = 'Vui lòng chọn ca trước khi chấm vào'; return; }
+
+      this.submitting = true;
       try {
-        const data = {};
-        if (this.gpsEnabled && this.toaDo) {
-          data.toaDo = this.toaDo.lat + ',' + this.toaDo.lng;
-        }
+        const data = { maCa };
+        if (this.gpsEnabled && this.toaDo) data.toaDo = this.toaDo.lat + ',' + this.toaDo.lng;
         const r = await Api.chamVao(data);
-        this.chamCong = { ...this.chamCong, ...r.data, gioVao: r.data.gioVao, trangThai: r.data.trangThai };
-        this.successMsg = '✓ Đã chấm công vào lúc ' + this._fmtGio(r.data.gioVao);
+        this.successMsg = '✓ Đã chấm vào ca ' + (r.data.tenCa || '') + ' lúc ' + this._fmtGio(r.data.gioVao);
         if (r.data.laCanhBao) {
           this.errorMsg = '⚠ Đi trễ — bị đánh dấu mất công ngày này (Điều 7.3 NQLĐ)';
         }
+        await this.loadHomNay();
         await this.loadLichSu();
       } catch (e) { this.errorMsg = e.message; }
       finally { this.submitting = false; }
@@ -113,47 +127,52 @@ function chamCongApp() {
 
     // ── Chấm ra ──────────────────────────────────────────────────────────────
     async chamRa() {
-      this._clearMsg(); this.submitting = true;
+      this._clearMsg(); this.canhBaoList = [];
+      this.submitting = true;
       try {
         const data = {};
-        if (this.gpsEnabled && this.toaDo) {
-          data.toaDo = this.toaDo.lat + ',' + this.toaDo.lng;
-        }
+        if (this.gpsEnabled && this.toaDo) data.toaDo = this.toaDo.lat + ',' + this.toaDo.lng;
         const r = await Api.chamRa(data);
-        this.chamCong = { ...this.chamCong, gioRa: r.data.gioRa, trangThai: r.data.trangThai };
-        this.successMsg = '✓ Đã chấm công ra lúc ' + this._fmtGio(r.data.gioRa);
+        this.successMsg = '✓ Đã chấm ra lúc ' + this._fmtGio(r.data.gioRa) +
+          (r.data.soGioCong ? ' — ' + r.data.soGioCong + 'h công' : '');
         if (r.data.laCanhBao) {
           this.errorMsg = '⚠ Về sớm — bị đánh dấu mất công ngày này (Điều 7.3 NQLĐ)';
         }
+        if (r.data.canhBao && r.data.canhBao.length) this.canhBaoList = r.data.canhBao;
+        await this.loadHomNay();
         await this.loadLichSu();
       } catch (e) { this.errorMsg = e.message; }
       finally { this.submitting = false; }
     },
 
-    // ── Utilities ─────────────────────────────────────────────────────────────
-    _fmtGio(iso) {
-      if (!iso) return '—';
-      try {
-        const d = new Date(iso);
-        return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh' });
-      } catch (_) { return iso; }
-    },
-    _fmtNgay(str) {
-      if (!str) return '';
-      try {
-        const [y,m,d] = str.substring(0,10).split('-');
-        return d + '/' + m + '/' + y;
-      } catch (_) { return str; }
-    },
     async refresh() {
       if (this.refreshing) return;
       this.refreshing = true;
-      this._clearMsg();
+      this._clearMsg(); this.canhBaoList = [];
       await this.loadHomNay();
       await this.loadLichSu();
       this.refreshing = false;
     },
 
+    // ── Utilities ─────────────────────────────────────────────────────────────
+    caLabel(ca) {
+      if (!ca) return '—';
+      return ca.tenCa + ' (' + ca.gioBatDau + '–' + ca.gioKetThuc + ')' + (this._laDem(ca) ? ' 🌙' : '');
+    },
+    _laDem(ca) {
+      return ca && (ca.banDem === true || String(ca.banDem).toUpperCase() === 'TRUE');
+    },
+    _fmtGio(iso) {
+      if (!iso) return '—';
+      try {
+        return new Date(iso).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh' });
+      } catch (_) { return iso; }
+    },
+    _fmtNgay(str) {
+      if (!str) return '';
+      try { const [y,m,d] = str.substring(0,10).split('-'); return d + '/' + m + '/' + y; }
+      catch (_) { return str; }
+    },
     _clearMsg() { this.errorMsg = ''; this.successMsg = ''; },
 
     badgeCls(tt) { return _ttBadge(tt); },

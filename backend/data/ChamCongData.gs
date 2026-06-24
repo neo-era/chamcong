@@ -33,6 +33,28 @@ function getChamCongNgay(maNV, ngayStr) {
   return list.find(o => o.maNV === maNV && toDateStr(o.ngay) === ngayStr) || null;
 }
 
+// Tất cả bản ghi của 1 NV trong 1 ngày (đa ca). Trả về mảng.
+function getChamCongNgayList(maNV, ngayStr) {
+  const sh = ccSheet();
+  return sheetToObjects(sh).filter(o => o.maNV === maNV && toDateStr(o.ngay) === ngayStr);
+}
+
+// Bản ghi của 1 NV trong 1 ngày + 1 ca cụ thể (khoá (maNV, ngày, maCa)).
+function getChamCongNgayCa(maNV, ngayStr, maCa) {
+  const sh = ccSheet();
+  return sheetToObjects(sh)
+    .find(o => o.maNV === maNV && toDateStr(o.ngay) === ngayStr && String(o.maCa) === String(maCa)) || null;
+}
+
+// Bản ghi đang mở (đã chấm VÀO, chưa chấm RA) gần nhất — gồm cả ca đêm vắt qua hôm sau.
+function getChamCongMoDang(maNV) {
+  const sh = ccSheet();
+  const list = sheetToObjects(sh).filter(o => o.maNV === maNV && o.gioVao && !o.gioRa);
+  if (!list.length) return null;
+  list.sort((a, b) => String(b.gioVao).localeCompare(String(a.gioVao)));
+  return list[0];
+}
+
 function getChamCongByMaCC(maCC) {
   const sh = ccSheet();
   const found = findRow(sh, 'maCC', maCC);
@@ -86,7 +108,7 @@ function setChamCongLock(maCC, locked) {
   return found.obj;
 }
 
-// Tạo mã chấm công: CC_NV001_20260619
-function genMaCC(maNV, ngayStr) {
-  return 'CC_' + maNV + '_' + ngayStr.replace(/-/g, '');
+// Tạo mã chấm công: CC_NV001_20260619_CA_DEM (đa ca → kèm maCa cho duy nhất theo ca).
+function genMaCC(maNV, ngayStr, maCa) {
+  return 'CC_' + maNV + '_' + ngayStr.replace(/-/g, '') + (maCa ? '_' + maCa : '');
 }

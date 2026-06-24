@@ -144,7 +144,7 @@ function apiTaoDon(user, body) {
     maDon, maNV: user.maNV, loaiDon, donViTinh, nguonChiTra,
     tuNgay: toDateStr(tuNgay), denNgay: toDateStr(denNgay), soNgay,
     lyDo: String(body.lyDo).trim(), dinhKem: body.dinhKem || '',
-    trangThai: 'Chờ duyệt', ngayTao: new Date().toISOString(),
+    trangThai: 'Chờ duyệt', ngayTao: toIsoVN(new Date()),
     soGio: soGio, lyDoDinhMuc: lyDoDinhMuc
   };
   createDon(don);

@@ -46,6 +46,7 @@ function _routeGet(action, user, params) {
     case 'getLichTrucNgay':      return apiGetLichTrucNgay(user, params);
     case 'getLichTrucTuan':      return apiGetLichTrucTuan(user, params);
     case 'getChamCongHomNay':    return apiGetChamCongHomNay(user);
+    case 'kiemTraViTri':         return apiKiemTraViTri(user, params);
     case 'getChamCongKhoang':    return apiGetChamCongKhoang(user, params);
     case 'danhSachDonCuaToi':    return apiDanhSachDonCuaToi(user, params);
     case 'donChoDuyet':          return apiDonChoDuyet(user, params);

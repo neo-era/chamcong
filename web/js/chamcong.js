@@ -25,6 +25,8 @@ function chamCongApp() {
     gpsEnabled:  false,
     gpsLoading:  false,
     toaDo:       null,
+    viTri:       null,     // kết quả xác minh địa bàn { trongDiaBan, diaChi, loi, canhBao }
+    checkingVT:  false,
 
     // Messages
     errorMsg:    '',
@@ -35,8 +37,10 @@ function chamCongApp() {
     get caOptions() {
       return (this.caList && this.caList.length) ? this.caList : (this.tatCaCa || []);
     },
-    get coTheVao() { return !this.moDang && !this.submitting && this.caOptions.length > 0; },
-    get coTheRa()  { return !!this.moDang && !this.submitting; },
+    // Ngoài địa bàn (đã xác minh được, không phải lỗi) → chặn chấm
+    get ngoaiDiaBan() { return !!(this.gpsEnabled && this.viTri && this.viTri.kiemTra && !this.viTri.loi && !this.viTri.trongDiaBan); },
+    get coTheVao() { return !this.moDang && !this.submitting && this.caOptions.length > 0 && !this.ngoaiDiaBan && !this.checkingVT; },
+    get coTheRa()  { return !!this.moDang && !this.submitting && !this.ngoaiDiaBan && !this.checkingVT; },
     get caDangMo() { return this.moDang ? (this.moDang.ca || null) : null; },
 
     // ── Khởi tạo ─────────────────────────────────────────────────────────────
@@ -88,19 +92,32 @@ function chamCongApp() {
 
     // ── GPS ──────────────────────────────────────────────────────────────────
     async toggleGPS() {
-      if (this.gpsEnabled) { this.gpsEnabled = false; this.toaDo = null; return; }
+      if (this.gpsEnabled) { this.gpsEnabled = false; this.toaDo = null; this.viTri = null; return; }
       if (!navigator.geolocation) { this.errorMsg = 'Trình duyệt không hỗ trợ GPS'; return; }
       this.gpsLoading = true;
       try {
         const pos = await new Promise((res, rej) =>
-          navigator.geolocation.getCurrentPosition(res, rej, { timeout: 10000 })
+          navigator.geolocation.getCurrentPosition(res, rej, { timeout: 10000, enableHighAccuracy: true })
         );
         this.toaDo      = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         this.gpsEnabled = true;
         this.errorMsg   = '';
+        await this.xacMinhViTri();
       } catch (e) {
         this.errorMsg = 'Không lấy được vị trí GPS: ' + (e.message || 'Bị từ chối');
       } finally { this.gpsLoading = false; }
+    },
+
+    // Gọi backend đổi toạ độ → địa chỉ + kiểm tra địa bàn
+    async xacMinhViTri() {
+      if (!this.toaDo) return;
+      this.checkingVT = true; this.viTri = null;
+      try {
+        const r = await Api.kiemTraViTri({ toaDo: this.toaDo.lat + ',' + this.toaDo.lng });
+        this.viTri = r.data;
+      } catch (e) {
+        this.viTri = { kiemTra: true, loi: true, trongDiaBan: true, canhBao: 'Không kiểm tra được khu vực: ' + e.message };
+      } finally { this.checkingVT = false; }
     },
 
     // ── Chấm vào ─────────────────────────────────────────────────────────────
@@ -119,6 +136,7 @@ function chamCongApp() {
         if (r.data.laCanhBao) {
           this.errorMsg = '⚠ Đi trễ — bị đánh dấu mất công ngày này (Điều 7.3 NQLĐ)';
         }
+        if (r.data.canhBao && r.data.canhBao.length) this.canhBaoList = r.data.canhBao;
         await this.loadHomNay();
         await this.loadLichSu();
       } catch (e) { this.errorMsg = e.message; }

@@ -74,6 +74,18 @@ function apiChamVao(user, body) {
     throw new Error('Đã chấm vào ca ' + ca.tenCa + ' hôm nay lúc ' + _formatGio(trung.gioVao));
   }
 
+  // Xác minh địa bàn khi có GPS hiện trường (chặn nếu ngoài khu vực; fail-open nếu lỗi dịch vụ)
+  const canhBao = [];
+  let diaChi = '';
+  if (body.toaDo) {
+    const vt = xacMinhViTri(body.toaDo);
+    diaChi = vt.diaChi || '';
+    if (vt.kiemTra && !vt.loi && !vt.trongDiaBan) {
+      throw new Error('Ngoài khu vực làm việc' + (diaChi ? ' (' + diaChi + ')' : '') + ' — không thể ghi nhận công.');
+    }
+    if (vt.canhBao) canhBao.push(vt.canhBao);
+  }
+
   const grace     = getConfigNumber('grace_minutes', 0);
   const theoGio   = (user.khoi === 'Trực tiếp');   // khối trực tiếp tính theo giờ
   const gioVaoIso = toIsoVN(gioVao);               // lưu giờ VN (+07:00)
@@ -84,10 +96,10 @@ function apiChamVao(user, body) {
   saveChamCong({
     maCC, maNV: user.maNV, ngay, maCa: ca.maCa,
     gioVao: gioVaoIso, gioRa: '',
-    nguon, toaDo: body.toaDo || '', trangThai, soGioCong: 0
+    nguon, toaDo: body.toaDo || '', trangThai, soGioCong: 0, diaChi
   });
 
-  appendLog(user.maNV, user.email, 'CHAM_VAO', 'ChamCong', { maCC, ngay, maCa: ca.maCa, trangThai, nguon });
+  appendLog(user.maNV, user.email, 'CHAM_VAO', 'ChamCong', { maCC, ngay, maCa: ca.maCa, trangThai, nguon, diaChi });
 
   return {
     ok: true,
@@ -96,7 +108,9 @@ function apiChamVao(user, body) {
       gioVao:      gioVaoIso,
       trangThai,
       trangThaiLabel: labelTrangThai(trangThai),
-      laCanhBao:   trangThai === 'TRE'
+      laCanhBao:   trangThai === 'TRE',
+      diaChi,
+      canhBao
     }
   };
 }
@@ -110,6 +124,18 @@ function apiChamRa(user, body) {
   const open = getChamCongMoDang(user.maNV);
   if (!open) throw new Error('Không có ca nào đang mở để chấm ra');
 
+  // Xác minh địa bàn khi có GPS hiện trường (chặn nếu ngoài khu vực; fail-open nếu lỗi)
+  const canhBaoVT = [];
+  let diaChiRa = '';
+  if (body.toaDo) {
+    const vt = xacMinhViTri(body.toaDo);
+    diaChiRa = vt.diaChi || '';
+    if (vt.kiemTra && !vt.loi && !vt.trongDiaBan) {
+      throw new Error('Ngoài khu vực làm việc' + (diaChiRa ? ' (' + diaChiRa + ')' : '') + ' — không thể ghi nhận công.');
+    }
+    if (vt.canhBao) canhBaoVT.push(vt.canhBao);
+  }
+
   const ca    = getCaByMa(open.maCa) || getCaMacDinh();
   const grace = getConfigNumber('grace_minutes', 0);
   const theoGio   = (user.khoi === 'Trực tiếp');
@@ -121,6 +147,7 @@ function apiChamRa(user, body) {
     gioRa:    gioRaIso,
     trangThai,
     soGioCong,
+    diaChi:   open.diaChi || diaChiRa,
     toaDo:    body.toaDo ? (open.toaDo || '') + '|Ra:' + body.toaDo : open.toaDo
   });
 
@@ -129,7 +156,7 @@ function apiChamRa(user, body) {
   });
 
   // ── Cảnh báo trần giờ (chỉ cảnh báo — không chặn) ──────────────────────────
-  const canhBao = [];
+  const canhBao = canhBaoVT.slice();   // gồm cả cảnh báo xác minh vị trí (nếu có)
   const ngayBG  = toDateStr(open.ngay);
 
   // (1) Tổng giờ trong ngày vượt trần (đọc lại sheet → đã gồm bản ghi vừa cập nhật)

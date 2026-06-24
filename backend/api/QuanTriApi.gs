@@ -11,6 +11,13 @@ function apiSetCauHinh(user, body) {
   return { ok: true, data: { key: body.key, value: body.value } };
 }
 
+// POST action=saoLuuNgay  — Admin only. Tạo bản sao lưu spreadsheet ngay.
+function apiSaoLuuNgay(user, body) {
+  requireQuyen(user, 'QUAN_TRI');
+  const url = backupSpreadsheet();
+  return { ok: true, data: { url: url, message: 'Đã tạo bản sao lưu' } };
+}
+
 // GET action=getAuditLog&tuNgay=&denNgay=&action=&maNV=&page=&size=  — HR/Admin
 function apiGetAuditLog(user, params) {
   if (!['HR', 'Admin'].includes(user.vaiTro)) throw new Error('Chỉ HR/Admin được xem nhật ký hệ thống');

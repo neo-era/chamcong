@@ -13,6 +13,10 @@ function quanTriApp() {
     cauHinh:    [],
     savingKey:  '',
 
+    // Bảo trì
+    backingUp:  false,
+    backupUrl:  '',
+
     // AuditLog
     logs:       [],
     logTotal:   0,
@@ -51,6 +55,18 @@ function quanTriApp() {
         this.successMsg = 'Đã lưu ' + c.key;
       } catch (e) { this.errorMsg = e.message; }
       finally { this.savingKey = ''; }
+    },
+
+    // ── Bảo trì ──────────────────────────────────────────────────────────────
+    async saoLuu() {
+      if (!confirm('Tạo bản sao lưu toàn bộ dữ liệu ngay bây giờ?')) return;
+      this.backingUp = true; this.backupUrl = ''; this._clearMsg();
+      try {
+        const r = await Api.saoLuuNgay();
+        this.backupUrl = (r.data && r.data.url) || '';
+        this.successMsg = 'Đã tạo bản sao lưu thành công';
+      } catch (e) { this.errorMsg = e.message; }
+      finally { this.backingUp = false; }
     },
 
     // ── AuditLog ─────────────────────────────────────────────────────────────

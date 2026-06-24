@@ -120,6 +120,7 @@ const Api = {
   getChiTietViPham:   (p)          => apiGet('getChiTietViPham', p || {}),
   quetCanhBao:        ()           => apiPost('quetCanhBao', {}),
   getAuditLog:        (p)          => apiGet('getAuditLog', p || {}),
+  saoLuuNgay:         ()           => apiPost('saoLuuNgay', {}),
   setCauHinh:         (data)       => apiPost('setCauHinh', data).then(r => { _cacheClear('cauhinh'); return r; }),
 
   // CauHinh (ít đổi → cache 5 phút)

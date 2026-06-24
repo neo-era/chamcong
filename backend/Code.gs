@@ -93,6 +93,7 @@ function _routePost(action, user, body) {
     case 'moKhoaKyCong':     return apiMoKhoaKyCong(user, body);
     case 'quetCanhBao':      return apiQuetCanhBao(user, body);
     case 'setCauHinh':       return apiSetCauHinh(user, body);
+    case 'saoLuuNgay':       return apiSaoLuuNgay(user, body);
     default:
       throw new Error('POST action không hợp lệ: ' + action);
   }

@@ -77,7 +77,10 @@
         <div style="font-size:.85rem;margin-top:.2rem;">
           Vào lúc <strong x-text="moDang ? _fmtGio(moDang.gioVao) : ''"></strong>
           <span x-show="moDang && _fmtNgay(moDang.ngay) !== _fmtNgay(ngay)"
-                style="color:var(--orange,#d97706);"> (ngày <span x-text="moDang ? _fmtNgay(moDang.ngay) : ''"></span> — ca đêm)</span>
+                style="color:#d97706;"> — bản ghi từ ngày <span x-text="moDang ? _fmtNgay(moDang.ngay) : ''"></span>, chưa chấm ra</span>
+        </div>
+        <div x-show="moDang && _quaHan(moDang)" style="font-size:.8rem;margin-top:.35rem;color:#b91c1c;">
+          ⚠ Ca này đã mở quá lâu — có thể bạn quên chấm ra. Hãy chấm ra để đóng, hoặc nhờ HR sửa ở trang <em>Sửa chấm công</em>.
         </div>
       </div>
 

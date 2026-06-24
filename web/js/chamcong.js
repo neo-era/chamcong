@@ -162,6 +162,11 @@ function chamCongApp() {
     _laDem(ca) {
       return ca && (ca.banDem === true || String(ca.banDem).toUpperCase() === 'TRUE');
     },
+    // Ca mở quá lâu (>18h) → nhiều khả năng quên chấm ra
+    _quaHan(r) {
+      if (!r || !r.gioVao) return false;
+      return (Date.now() - new Date(r.gioVao).getTime()) / 3600000 > 18;
+    },
     _fmtGio(iso) {
       if (!iso) return '—';
       try {

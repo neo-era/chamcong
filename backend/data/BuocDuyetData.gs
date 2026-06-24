@@ -30,5 +30,5 @@ function getBuocDuyetCuaDon(maDon) {
   return sheetToObjects(sh)
     .filter(o => o.maDon === maDon)
     .sort((a, b) => (Number(a.capDuyet) - Number(b.capDuyet)) ||
-                    String(a.thoiDiem).localeCompare(String(b.thoiDiem)));
+                    (tsMs(a.thoiDiem) - tsMs(b.thoiDiem)));
 }

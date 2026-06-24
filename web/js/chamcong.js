@@ -77,7 +77,7 @@ function chamCongApp() {
         const tu  = _subtractDays(den, 6);
         const r   = await Api.getChamCongKhoang({ tuNgay: tu, denNgay: den });
         this.danhSachCC = r.data.sort((a, b) =>
-          (b.ngay.localeCompare(a.ngay)) || String(b.gioVao).localeCompare(String(a.gioVao)));
+          (b.ngay.localeCompare(a.ngay)) || (this._ts(b.gioVao) - this._ts(a.gioVao)));
       } catch (_) { /* lịch sử không quan trọng */ }
     },
 
@@ -167,6 +167,8 @@ function chamCongApp() {
       if (!r || !r.gioVao) return false;
       return (Date.now() - new Date(r.gioVao).getTime()) / 3600000 > 18;
     },
+    // Epoch ms để sắp xếp theo instant (bền với chuỗi UTC cũ + giờ VN mới)
+    _ts(v) { if (!v) return 0; const t = new Date(v).getTime(); return isNaN(t) ? 0 : t; },
     _fmtGio(iso) {
       if (!iso) return '—';
       try {

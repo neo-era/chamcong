@@ -21,7 +21,7 @@ function themThongBao(maNV, noiDung, link) {
 function listThongBao(maNV, n) {
   const sh = getOrCreateSheet(TB_SHEET, TB_HEADERS);
   const ds = sheetToObjects(sh).filter(o => o.maNV === maNV)
-    .sort((a, b) => String(b.thoiDiem).localeCompare(String(a.thoiDiem)));
+    .sort((a, b) => tsMs(b.thoiDiem) - tsMs(a.thoiDiem));
   return n ? ds.slice(0, n) : ds;
 }
 

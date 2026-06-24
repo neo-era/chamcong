@@ -98,7 +98,7 @@ function apiGetCanhBao(user, params) {
   }
   if (params.donVi)      out = out.filter(x => x.donVi === params.donVi);
   if (params.mucCanhBao) out = out.filter(x => x.mucCanhBao === params.mucCanhBao);
-  out.sort((a, b) => String(b.thoiDiem).localeCompare(String(a.thoiDiem)));
+  out.sort((a, b) => tsMs(b.thoiDiem) - tsMs(a.thoiDiem));
   return { ok: true, data: out };
 }
 

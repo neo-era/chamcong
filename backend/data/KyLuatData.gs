@@ -32,5 +32,5 @@ function listCanhBao() {
 function daCoCanhBaoTrongNgay(maNV, muc, ngayStr) {
   const sh = getOrCreateSheet(CB_SHEET, CB_HEADERS);
   return sheetToObjects(sh).some(o =>
-    o.maNV === maNV && o.mucCanhBao === muc && toDateStr(o.thoiDiem) === ngayStr);
+    o.maNV === maNV && o.mucCanhBao === muc && vnDateStr(o.thoiDiem) === ngayStr);
 }

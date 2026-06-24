@@ -200,6 +200,9 @@ function chamCongApp() {
     },
     _clearMsg() { this.errorMsg = ''; this.successMsg = ''; },
 
+    // Địa chỉ hiển thị: ưu tiên diaChi đã geocode, không có → nguồn (Trụ sở), cuối cùng '—'
+    diaChiText(r) { return (r && (r.diaChi || r.nguon)) || '—'; },
+
     badgeCls(tt) { return _ttBadge(tt); },
     ttLabel(tt)  { return _ttLabel(tt); }
   };

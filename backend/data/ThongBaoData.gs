@@ -13,7 +13,7 @@ function themThongBao(maNV, noiDung, link) {
     noiDung: noiDung,
     link:    link || '',
     daDoc:   '',
-    thoiDiem: new Date().toISOString()
+    thoiDiem: toIsoVN(new Date())
   }, TB_HEADERS);
 }
 

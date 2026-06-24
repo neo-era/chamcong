@@ -18,7 +18,7 @@ function themBuocDuyet(buoc) {
     nguoiDuyet: buoc.nguoiDuyet,
     ketQua:     buoc.ketQua,
     yKien:      buoc.yKien || '',
-    thoiDiem:   new Date().toISOString()   // lưu vết — giờ máy chủ
+    thoiDiem:   toIsoVN(new Date())   // lưu vết — giờ VN (+07:00)
   };
   appendRow(sh, rec, BD_HEADERS);
   return rec;

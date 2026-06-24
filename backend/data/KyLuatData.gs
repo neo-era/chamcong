@@ -17,7 +17,7 @@ function themCanhBao(cb) {
     soNgayBoViec30: cb.soNgayBoViec30,
     soNgayBoViec365: cb.soNgayBoViec365,
     mucCanhBao:     cb.mucCanhBao,
-    thoiDiem:       new Date().toISOString()
+    thoiDiem:       toIsoVN(new Date())
   };
   appendRow(sh, rec, CB_HEADERS);
   return rec;

@@ -10,7 +10,7 @@ function appendLog(maNV, email, action, doiTuong, chiTiet) {
   const thoiDiem = new Date();
   appendRow(sh, {
     maLog,
-    thoiDiem: thoiDiem.toISOString(),
+    thoiDiem: toIsoVN(thoiDiem),
     maNV: maNV || '',
     email: email || '',
     action,

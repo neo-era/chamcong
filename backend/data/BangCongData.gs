@@ -38,9 +38,9 @@ function _upsertBangCong(ky, maNV, vals) {
 }
 
 function datKhoaBangCong(ky, maNV, nguoi) {
-  return _upsertBangCong(ky, maNV, { isLocked: 'TRUE', nguoiKhoa: nguoi, thoiDiemKhoa: new Date().toISOString() });
+  return _upsertBangCong(ky, maNV, { isLocked: 'TRUE', nguoiKhoa: nguoi, thoiDiemKhoa: toIsoVN(new Date()) });
 }
 
 function moKhoaBangCong(ky, maNV, nguoi) {
-  return _upsertBangCong(ky, maNV, { isLocked: '', nguoiKhoa: nguoi, thoiDiemKhoa: new Date().toISOString() });
+  return _upsertBangCong(ky, maNV, { isLocked: '', nguoiKhoa: nguoi, thoiDiemKhoa: toIsoVN(new Date()) });
 }

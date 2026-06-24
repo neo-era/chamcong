@@ -61,6 +61,7 @@ const Api = {
 
   // Chấm công
   getChamCongHomNay:  ()           => apiGet('getChamCongHomNay'),
+  kiemTraViTri:       (p)          => apiGet('kiemTraViTri', p),
   getChamCongKhoang:  (p)          => apiGet('getChamCongKhoang', p),
   chamVao:            (data)       => apiPost('chamVao', data),
   chamRa:             (data)       => apiPost('chamRa', data),

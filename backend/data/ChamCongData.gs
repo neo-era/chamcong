@@ -1,7 +1,7 @@
 // ─── ChamCongData.gs ──────────────────────────────────────────────────────────
 
 const CC_SHEET   = 'ChamCong';
-const CC_HEADERS = ['maCC','maNV','ngay','maCa','gioVao','gioRa','nguon','toaDo','trangThai','isLocked','soGioCong'];
+const CC_HEADERS = ['maCC','maNV','ngay','maCa','gioVao','gioRa','nguon','toaDo','trangThai','isLocked','soGioCong','diaChi'];
 
 // Lấy sheet ChamCong và bảo đảm có đủ cột (migration an toàn, gọi nhiều lần được).
 function ccSheet() {
@@ -19,6 +19,10 @@ function ensureChamCongCols(sh) {
   }
   if (headers.indexOf('soGioCong') === -1) {
     sh.getRange(1, headers.length + 1).setValue('soGioCong');
+    headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  }
+  if (headers.indexOf('diaChi') === -1) {
+    sh.getRange(1, headers.length + 1).setValue('diaChi');
   }
 }
 

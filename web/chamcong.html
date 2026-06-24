@@ -103,16 +103,31 @@
         </template>
       </div>
 
-      <!-- GPS toggle -->
-      <div style="margin-bottom:1rem;display:flex;align-items:center;gap:.75rem;">
+      <!-- GPS toggle + xác minh địa bàn -->
+      <div style="margin-bottom:1rem;">
         <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.88rem;">
-          <input type="checkbox" :checked="gpsEnabled" @change="toggleGPS()" :disabled="gpsLoading">
+          <input type="checkbox" :checked="gpsEnabled" @change="toggleGPS()" :disabled="gpsLoading || checkingVT">
           <span>Kèm toạ độ GPS (hiện trường)</span>
-          <span x-show="gpsLoading" class="spinner spinner-dark" style="width:1rem;height:1rem;"></span>
+          <span x-show="gpsLoading || checkingVT" class="spinner spinner-dark" style="width:1rem;height:1rem;"></span>
         </label>
-        <span x-show="gpsEnabled && toaDo" style="font-size:.8rem;color:var(--green);">
-          📍 <span x-text="toaDo ? toaDo.lat.toFixed(4)+', '+toaDo.lng.toFixed(4) : ''"></span>
-        </span>
+
+        <!-- Đang kiểm tra -->
+        <div x-show="gpsEnabled && checkingVT" style="margin-top:.5rem;font-size:.82rem;color:var(--gray-5);">
+          Đang xác định vị trí…
+        </div>
+
+        <!-- Kết quả xác minh -->
+        <template x-if="gpsEnabled && viTri && !checkingVT">
+          <div style="margin-top:.5rem;font-size:.84rem;border-radius:.5rem;padding:.6rem .75rem;"
+               :style="ngoaiDiaBan ? 'background:#fef2f2;border:1px solid #ef4444;color:#991b1b;'
+                       : (viTri.loi ? 'background:#fffbeb;border:1px solid #f59e0b;color:#92400e;'
+                       : 'background:#ecfdf5;border:1px solid #16a34a;color:#166534;')">
+            <div x-show="viTri.diaChi">📍 <span x-text="viTri.diaChi"></span></div>
+            <div x-show="!viTri.loi && viTri.trongDiaBan" style="font-weight:600;margin-top:.2rem;">✓ Trong địa bàn làm việc</div>
+            <div x-show="ngoaiDiaBan" style="font-weight:700;margin-top:.2rem;">✕ Ngoài khu vực làm việc — không thể chấm công tại đây</div>
+            <div x-show="viTri.loi" style="margin-top:.2rem;" x-text="viTri.canhBao"></div>
+          </div>
+        </template>
       </div>
 
       <!-- Nút chấm công -->

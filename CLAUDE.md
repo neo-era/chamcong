@@ -17,7 +17,9 @@ Phần mềm chấm công – nghỉ phép – duyệt đơn cho đơn vị **Ch
 - `docs/06-bang-cong-template.md` — đặc tả biểu mẫu bảng công tháng (đầu ra GĐ3), trích từ file mẫu `docs/Copy of Chấm công tháng 6.xlsx`.
 - `docs/07-cham-cong-truc-tiep-theo-gio.md` — quy tắc chấm công khối Trực tiếp tính theo giờ (ĐÃ code).
 - `docs/08-duyet-don-3-cap.md` — mọi đơn duyệt đủ 3 cấp 1→2→3 (ĐÃ code).
-- `docs/09-backlog-tinh-nang.md` — backlog tính năng mở rộng + ưu tiên (CHƯA code; prompt ở PHASE NC).
+- `docs/09-backlog-tinh-nang.md` — backlog tính năng mở rộng + ưu tiên (PHASE NC — ĐÃ code).
+- `docs/10-cham-cong-da-ca.md` — chấm công đa ca, ca đêm vắt nửa đêm, lưu giờ VN (+07:00), cảnh báo trần giờ, xác minh vị trí GPS/địa bàn (ĐÃ code).
+- `docs/11-van-hanh-bao-tri.md` — vận hành, sao lưu tự động/thủ công, archive ChamCong, self-host thư viện, ngưỡng nâng cấp (ĐÃ code).
 
 ## Hằng số pháp lý hiện hành (đưa vào CauHinh, KHÔNG hardcode)
 

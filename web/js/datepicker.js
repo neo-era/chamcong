@@ -1,7 +1,7 @@
 // ─── datepicker.js ────────────────────────────────────────────────────────────
 // Hiển thị mọi <input type="date"> theo định dạng DD/MM/YYYY (dùng flatpickr).
 // Giá trị thực của input vẫn là yyyy-MM-dd → KHÔNG phải sửa backend hay payload.
-// Nếu CDN flatpickr lỗi → tự rơi về input ngày gốc của trình duyệt.
+// flatpickr self-host trong web/vendor (pin bản) → tự rơi về input ngày gốc nếu lỗi.
 
 (function () {
   function injectCss(href) {
@@ -43,9 +43,9 @@
   };
 
   function boot() {
-    injectCss('https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css');
-    injectJs('https://cdn.jsdelivr.net/npm/flatpickr', function () {
-      injectJs('https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/vn.js', apply);
+    injectCss('vendor/flatpickr.min.css');
+    injectJs('vendor/flatpickr.min.js', function () {
+      injectJs('vendor/flatpickr-vn.js', apply);
     });
   }
 

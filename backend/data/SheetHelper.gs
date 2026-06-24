@@ -107,6 +107,23 @@ function toIsoVN(d) {
   return Utilities.formatDate(d, 'Asia/Ho_Chi_Minh', "yyyy-MM-dd'T'HH:mm:ss") + '+07:00';
 }
 
+// Đổi mốc thời gian (chuỗi ISO có 'Z' hoặc '+07:00', hoặc Date) → epoch ms để SẮP XẾP/SO SÁNH
+// đúng theo instant — bền với dữ liệu trộn UTC cũ và giờ VN mới.
+function tsMs(v) {
+  if (!v) return 0;
+  const t = (v instanceof Date) ? v.getTime() : new Date(v).getTime();
+  return isNaN(t) ? 0 : t;
+}
+
+// Ngày VN (yyyy-MM-dd) của một mốc thời gian bất kỳ — dùng để LỌC/ĐỐI CHIẾU theo ngày,
+// đúng cho cả chuỗi UTC ('...Z') lẫn giờ VN ('+07:00').
+function vnDateStr(v) {
+  if (!v) return '';
+  const d = (v instanceof Date) ? v : new Date(v);
+  return isNaN(d.getTime()) ? String(v).substring(0, 10)
+                            : Utilities.formatDate(d, 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd');
+}
+
 // Khởi tạo tất cả sheet GĐ1 (chạy 1 lần từ Apps Script Editor)
 function setupGD1() {
   getOrCreateSheet('NhanVien',  ['maNV','hoTen','donVi','khoi','chucDanh','dieuKienCV','ngayVaoLam','quanLyTrucTiep','trangThai','email','vaiTro']);

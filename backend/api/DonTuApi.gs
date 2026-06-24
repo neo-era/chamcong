@@ -223,7 +223,7 @@ function apiDanhSachDonCuaToi(user, params) {
   if (params.loaiDon)   filters.loaiDon   = params.loaiDon;
   if (params.trangThai) filters.trangThai = params.trangThai;
   const ds = listDonCuaNV(user.maNV, filters)
-    .sort((a, b) => String(b.ngayTao).localeCompare(String(a.ngayTao)));
+    .sort((a, b) => tsMs(b.ngayTao) - tsMs(a.ngayTao));
   const tenMap = _tenMap();
   return { ok: true, data: ds.map(d => Object.assign({}, d, { buoc: _ganTenBuoc(getBuocDuyetCuaDon(d.maDon), tenMap) })) };
 }
@@ -285,7 +285,7 @@ function apiDonChoDuyet(user, params) {
       buoc: _ganTenBuoc(tt.buoc, tenMap)
     }));
   });
-  ketQua.sort((a, b) => String(a.ngayTao).localeCompare(String(b.ngayTao)));
+  ketQua.sort((a, b) => tsMs(a.ngayTao) - tsMs(b.ngayTao));
   return { ok: true, data: ketQua };
 }
 

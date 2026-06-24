@@ -19,10 +19,10 @@ function apiGetAuditLog(user, params) {
 
   if (params.action) list = list.filter(o => String(o.action) === params.action);
   if (params.maNV)   list = list.filter(o => String(o.maNV) === params.maNV);
-  if (params.tuNgay) list = list.filter(o => String(o.thoiDiem).substring(0, 10) >= params.tuNgay);
-  if (params.denNgay) list = list.filter(o => String(o.thoiDiem).substring(0, 10) <= params.denNgay);
+  if (params.tuNgay) list = list.filter(o => vnDateStr(o.thoiDiem) >= params.tuNgay);
+  if (params.denNgay) list = list.filter(o => vnDateStr(o.thoiDiem) <= params.denNgay);
 
-  list.sort((a, b) => String(b.thoiDiem).localeCompare(String(a.thoiDiem)));
+  list.sort((a, b) => tsMs(b.thoiDiem) - tsMs(a.thoiDiem));
 
   const page = Math.max(1, Number(params.page) || 1);
   const size = Math.min(200, Number(params.size) || 50);

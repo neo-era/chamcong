@@ -51,7 +51,7 @@ function getChamCongMoDang(maNV) {
   const sh = ccSheet();
   const list = sheetToObjects(sh).filter(o => o.maNV === maNV && o.gioVao && !o.gioRa);
   if (!list.length) return null;
-  list.sort((a, b) => String(b.gioVao).localeCompare(String(a.gioVao)));
+  list.sort((a, b) => tsMs(b.gioVao) - tsMs(a.gioVao));   // theo instant — bền với UTC cũ + giờ VN mới
   return list[0];
 }
 

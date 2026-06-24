@@ -42,6 +42,7 @@
   <div class="card" style="padding:.6rem 1rem;display:flex;gap:.5rem;">
     <button class="btn" :class="tab==='cauhinh' ? 'btn-primary' : 'btn-ghost'" @click="doiTab('cauhinh')">Cấu hình</button>
     <button class="btn" :class="tab==='audit'   ? 'btn-primary' : 'btn-ghost'" @click="doiTab('audit')">Nhật ký (AuditLog)</button>
+    <button class="btn" :class="tab==='baotri'  ? 'btn-primary' : 'btn-ghost'" @click="doiTab('baotri')">Bảo trì</button>
   </div>
 
   <div x-show="loading" style="text-align:center;padding:2rem;">
@@ -106,6 +107,23 @@
     <div style="display:flex;gap:.5rem;justify-content:center;padding:.75rem;">
       <button class="btn btn-ghost" @click="trang(-1)" :disabled="logPage<=1">← Trước</button>
       <button class="btn btn-ghost" @click="trang(1)"  :disabled="logPage>=soTrang">Sau →</button>
+    </div>
+  </div>
+
+  <!-- TAB BẢO TRÌ -->
+  <div class="card" x-show="!loading && tab==='baotri'">
+    <div class="card-title">Sao lưu dữ liệu</div>
+    <p style="font-size:.88rem;color:var(--gray-6);margin:.25rem 0 1rem;">
+      Tạo ngay 1 bản sao toàn bộ dữ liệu vào thư mục Drive <code>CSCC_ChamCong_Backup</code> (giữ 12 bản gần nhất).
+      Lịch sao lưu tự động hằng tuần được cài riêng trong Apps Script (<code>installBackupTrigger</code>).
+    </p>
+    <button class="btn btn-primary" @click="saoLuu()" :disabled="backingUp">
+      <span x-show="backingUp" class="spinner"></span>
+      <span x-text="backingUp ? 'Đang sao lưu…' : '💾 Sao lưu ngay'"></span>
+    </button>
+    <div x-show="backupUrl" style="margin-top:1rem;font-size:.88rem;">
+      ✓ Đã tạo bản sao lưu —
+      <a :href="backupUrl" target="_blank" style="color:var(--accent,#16a34a);font-weight:600;">mở bản sao lưu ↗</a>
     </div>
   </div>
 

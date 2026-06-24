@@ -100,6 +100,13 @@ function todayStr() {
   return Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd');
 }
 
+// Mốc thời gian ISO theo GIỜ VIỆT NAM (offset +07:00), vd '2026-06-22T09:33:08+07:00'.
+// VN không có DST → +07:00 luôn đúng. Dễ đọc trực tiếp trên Sheet, vẫn không nhập nhằng
+// và new Date() phía client/Apps Script parse đúng instant.
+function toIsoVN(d) {
+  return Utilities.formatDate(d, 'Asia/Ho_Chi_Minh', "yyyy-MM-dd'T'HH:mm:ss") + '+07:00';
+}
+
 // Khởi tạo tất cả sheet GĐ1 (chạy 1 lần từ Apps Script Editor)
 function setupGD1() {
   getOrCreateSheet('NhanVien',  ['maNV','hoTen','donVi','khoi','chucDanh','dieuKienCV','ngayVaoLam','quanLyTrucTiep','trangThai','email','vaiTro']);

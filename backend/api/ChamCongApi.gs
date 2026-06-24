@@ -76,13 +76,14 @@ function apiChamVao(user, body) {
 
   const grace     = getConfigNumber('grace_minutes', 0);
   const theoGio   = (user.khoi === 'Trực tiếp');   // khối trực tiếp tính theo giờ
-  const trangThai = tinhTrangThaiCong(gioVao.toISOString(), null, ca, grace, theoGio);
+  const gioVaoIso = toIsoVN(gioVao);               // lưu giờ VN (+07:00)
+  const trangThai = tinhTrangThaiCong(gioVaoIso, null, ca, grace, theoGio);
   const nguon     = body.toaDo ? 'GPS hiện trường' : 'Trụ sở';
   const maCC      = genMaCC(user.maNV, ngay, ca.maCa);
 
   saveChamCong({
     maCC, maNV: user.maNV, ngay, maCa: ca.maCa,
-    gioVao: gioVao.toISOString(), gioRa: '',
+    gioVao: gioVaoIso, gioRa: '',
     nguon, toaDo: body.toaDo || '', trangThai, soGioCong: 0
   });
 
@@ -92,7 +93,7 @@ function apiChamVao(user, body) {
     ok: true,
     data: {
       maCC, maCa: ca.maCa, tenCa: ca.tenCa,
-      gioVao:      gioVao.toISOString(),
+      gioVao:      gioVaoIso,
       trangThai,
       trangThaiLabel: labelTrangThai(trangThai),
       laCanhBao:   trangThai === 'TRE'
@@ -112,11 +113,12 @@ function apiChamRa(user, body) {
   const ca    = getCaByMa(open.maCa) || getCaMacDinh();
   const grace = getConfigNumber('grace_minutes', 0);
   const theoGio   = (user.khoi === 'Trực tiếp');
-  const trangThai = tinhTrangThaiCong(open.gioVao, gioRa.toISOString(), ca, grace, theoGio);
-  const soGioCong = tinhSoGioLam(trangThai, open.gioVao, gioRa.toISOString(), ca, theoGio);
+  const gioRaIso  = toIsoVN(gioRa);                // lưu giờ VN (+07:00)
+  const trangThai = tinhTrangThaiCong(open.gioVao, gioRaIso, ca, grace, theoGio);
+  const soGioCong = tinhSoGioLam(trangThai, open.gioVao, gioRaIso, ca, theoGio);
 
   updateChamCong(open.maCC, {
-    gioRa:    gioRa.toISOString(),
+    gioRa:    gioRaIso,
     trangThai,
     soGioCong,
     toaDo:    body.toaDo ? (open.toaDo || '') + '|Ra:' + body.toaDo : open.toaDo
@@ -155,7 +157,7 @@ function apiChamRa(user, body) {
     ok: true,
     data: {
       maCC:          open.maCC,
-      gioRa:         gioRa.toISOString(),
+      gioRa:         gioRaIso,
       soGioCong,
       trangThai,
       trangThaiLabel: labelTrangThai(trangThai),

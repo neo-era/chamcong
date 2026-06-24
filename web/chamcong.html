@@ -152,7 +152,7 @@
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>Ca</th><th>Vào</th><th>Ra</th><th>Giờ công</th><th>Trạng thái</th></tr>
+            <tr><th>Ca</th><th>Vào</th><th>Ra</th><th>Giờ công</th><th>Trạng thái</th><th>Địa chỉ</th></tr>
           </thead>
           <tbody>
             <template x-for="r in records" :key="r.maCC">
@@ -162,6 +162,7 @@
                 <td x-text="_fmtGio(r.gioRa)"></td>
                 <td x-text="(r.soGioCong || 0) + 'h'"></td>
                 <td><span :class="'badge ' + badgeCls(r.trangThai)" x-text="ttLabel(r.trangThai)"></span></td>
+                <td style="font-size:.82rem;color:var(--gray-5);max-width:220px;" x-text="diaChiText(r)"></td>
               </tr>
             </template>
           </tbody>
@@ -181,6 +182,7 @@
               <th>Vào</th>
               <th>Ra</th>
               <th>Trạng thái</th>
+              <th>Địa chỉ</th>
             </tr>
           </thead>
           <tbody>
@@ -191,6 +193,7 @@
                 <td x-text="_fmtGio(cc.gioVao)"></td>
                 <td x-text="_fmtGio(cc.gioRa)"></td>
                 <td><span :class="'badge ' + badgeCls(cc.trangThai)" x-text="ttLabel(cc.trangThai)"></span></td>
+                <td style="font-size:.82rem;color:var(--gray-5);max-width:220px;" x-text="diaChiText(cc)"></td>
               </tr>
             </template>
           </tbody>

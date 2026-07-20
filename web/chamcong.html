@@ -48,6 +48,7 @@
     <!-- Thông báo -->
     <div x-show="errorMsg" class="alert alert-error" x-text="errorMsg"></div>
     <div x-show="successMsg" class="alert alert-success" x-text="successMsg"></div>
+    <div x-show="warnMsg" class="alert alert-warning" x-text="warnMsg"></div>
 
     <!-- Cảnh báo trần giờ (sau khi chấm ra) -->
     <template x-for="(cb, i) in canhBaoList" :key="i">

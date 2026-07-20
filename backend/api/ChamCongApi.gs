@@ -5,6 +5,7 @@
 // và bản ghi đang mở (đã vào chưa ra — có thể là ca đêm vắt từ hôm qua).
 function apiGetChamCongHomNay(user) {
   const ngay = todayStr();
+<<<<<<< Updated upstream
 
   // Ca được phân hôm nay (đa ca). Không có lịch → ca mặc định (khối gián tiếp).
   const lichCa = getLichTrucNgayList(user.maNV, ngay);
@@ -29,6 +30,38 @@ function apiGetChamCongHomNay(user) {
       tatCaCa: listCa()       // toàn bộ ca — cho phép chọn khi không có lịch (vd tăng cường)
     }
   };
+=======
+  const cc   = getChamCongNgay(user.maNV, ngay);
+  const lt   = getLichTrucNgay(user.maNV, ngay);
+  const ca   = lt ? getCaByMa(lt.maCa) : getCaMacDinh();
+
+  // Tìm ca cũ chưa chấm ra (chỉ cần thông báo khi hôm nay chưa có gioVao)
+  let caChuaRa = null;
+  if (!cc || !cc.gioVao) {
+    const tuNgay = _subtractDaysStr(ngay, 30);
+    const danhSach = getChamCongKhoang(user.maNV, tuNgay, _subtractDaysStr(ngay, 1));
+    // Tìm bản ghi gần nhất có gioVao nhưng chưa có gioRa
+    const caCu = danhSach
+      .filter(o => o.gioVao && !o.gioRa)
+      .sort((a, b) => String(b.ngay).localeCompare(String(a.ngay)))[0];
+    if (caCu) {
+      const caCuObj = getCaByMa(caCu.maCa) || getCaMacDinh();
+      caChuaRa = {
+        ngay:   toDateStr(caCu.ngay),
+        tenCa:  caCuObj ? caCuObj.tenCa : caCu.maCa,
+        gioVao: _formatGio(caCu.gioVao)
+      };
+    }
+  }
+
+  return { ok: true, data: { chamCong: cc, ca, ngay, caChuaRa } };
+}
+
+function _subtractDaysStr(ngayStr, days) {
+  const d = new Date(ngayStr + 'T00:00:00+07:00');
+  d.setDate(d.getDate() - days);
+  return Utilities.formatDate(d, 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd');
+>>>>>>> Stashed changes
 }
 
 // GET action=getChamCongKhoang&maNV=xxx&tuNgay=yyyy-MM-dd&denNgay=yyyy-MM-dd

@@ -3,13 +3,24 @@
 const CA_SHEET   = 'Ca';
 const CA_HEADERS = ['maCa','tenCa','gioBatDau','gioKetThuc','banDem'];
 
-// NC-G: memo in-execution — sheet Ca ít dòng, không thay đổi trong giờ → cache cả execution.
+// NC-G: in-execution memo + CacheService 10 phút → sheet Ca hiếm thay đổi.
+const _CA_CACHE_KEY = 'cc_ca_v1';
+const _CA_CACHE_TTL = 600;
 let _caMemo = null;
 function _allCa() {
-  if (!_caMemo) _caMemo = sheetToObjects(getSheet(CA_SHEET));
+  if (_caMemo) return _caMemo;
+  try {
+    const hit = CacheService.getScriptCache().get(_CA_CACHE_KEY);
+    if (hit) { _caMemo = JSON.parse(hit); return _caMemo; }
+  } catch (_) {}
+  _caMemo = sheetToObjects(getSheet(CA_SHEET));
+  try { CacheService.getScriptCache().put(_CA_CACHE_KEY, JSON.stringify(_caMemo), _CA_CACHE_TTL); } catch (_) {}
   return _caMemo;
 }
-function _resetCaMemo() { _caMemo = null; }
+function _resetCaMemo() {
+  _caMemo = null;
+  try { CacheService.getScriptCache().remove(_CA_CACHE_KEY); } catch (_) {}
+}
 
 function getCaByMa(maCa) {
   if (!maCa) return null;

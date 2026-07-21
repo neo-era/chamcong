@@ -7,13 +7,24 @@ const NV_HEADERS = ['maNV','hoTen','donVi','khoi','chucDanh','dieuKienCV',
 // Số vòng lặp băm (chống brute-force). Chỉ chạy khi đăng nhập/đổi mật khẩu.
 const SALT_ITER = 1000;
 
-// NC-G: memo danh sách NV trong 1 execution (giảm đọc sheet lặp lại).
+// NC-G: in-execution memo + CacheService 60s → tránh đọc sheet NhanVien mỗi request.
+const _NV_CACHE_KEY = 'cc_nv_v1';
+const _NV_CACHE_TTL = 60;
 let _nvMemo = null;
 function _allNV() {
-  if (!_nvMemo) _nvMemo = sheetToObjects(getSheet(NV_SHEET));
+  if (_nvMemo) return _nvMemo;
+  try {
+    const hit = CacheService.getScriptCache().get(_NV_CACHE_KEY);
+    if (hit) { _nvMemo = JSON.parse(hit); return _nvMemo; }
+  } catch (_) {}
+  _nvMemo = sheetToObjects(getSheet(NV_SHEET));
+  try { CacheService.getScriptCache().put(_NV_CACHE_KEY, JSON.stringify(_nvMemo), _NV_CACHE_TTL); } catch (_) {}
   return _nvMemo;
 }
-function _resetNVMemo() { _nvMemo = null; }
+function _resetNVMemo() {
+  _nvMemo = null;
+  try { CacheService.getScriptCache().remove(_NV_CACHE_KEY); } catch (_) {}
+}
 
 function getNVByEmail(email) {
   return _allNV().find(o => o.email === email) || null;

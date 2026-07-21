@@ -10,9 +10,17 @@ function getLichTrucNgay(maNV, ngayStr) {
 }
 
 // Tất cả ca được phân cho 1 NV trong 1 ngày (đa ca). Trả về mảng bản ghi LichTruc.
+// NC-G: cache 1h/key — lịch phân của 1 NV trong 1 ngày hiếm thay đổi trong ngày.
 function getLichTrucNgayList(maNV, ngayStr) {
+  const key = 'cc_lt_' + maNV + '_' + ngayStr;
+  try {
+    const hit = CacheService.getScriptCache().get(key);
+    if (hit) return JSON.parse(hit);
+  } catch (_) {}
   const sh = getOrCreateSheet(LT_SHEET, LT_HEADERS);
-  return sheetToObjects(sh).filter(o => o.maNV === maNV && toDateStr(o.ngay) === ngayStr);
+  const result = sheetToObjects(sh).filter(o => o.maNV === maNV && toDateStr(o.ngay) === ngayStr);
+  try { CacheService.getScriptCache().put(key, JSON.stringify(result), 3600); } catch (_) {}
+  return result;
 }
 
 // Lịch trực của 1 NV trong 1 tuần (mảng ngày liên tiếp)
@@ -49,11 +57,13 @@ function setLichTruc(maNV, ngayStr, maCa) {
     if (found) {
       found.obj.maCa = maCa;
       updateRow(sh, found.row, found.obj, LT_HEADERS);
+      _invalidateLichTrucCache(maNV, ngayStr);
       return;
     }
   }
   const maLT = 'LT_' + maNV + '_' + ngayStr.replace(/-/g, '');
   appendRow(sh, { maLT, maNV, ngay: ngayStr, maCa }, LT_HEADERS);
+  _invalidateLichTrucCache(maNV, ngayStr);
 }
 
 // Xoá lịch trực của 1 NV trong 1 ngày
@@ -66,7 +76,12 @@ function deleteLichTruc(maNV, ngayStr) {
   for (let i = data.length - 1; i >= 1; i--) {
     if (String(data[i][nvIdx]) === maNV && toDateStr(data[i][ngayIdx]) === ngayStr) {
       sh.deleteRow(i + 1);
+      _invalidateLichTrucCache(maNV, ngayStr);
       return;
     }
   }
+}
+
+function _invalidateLichTrucCache(maNV, ngayStr) {
+  try { CacheService.getScriptCache().remove('cc_lt_' + maNV + '_' + ngayStr); } catch (_) {}
 }

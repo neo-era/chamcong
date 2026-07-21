@@ -96,8 +96,11 @@
             </template>
           </select>
         </template>
-        <template x-if="caOptions.length === 1">
+        <template x-if="caOptions.length === 1 && !_daChamCa(caOptions[0].maCa)">
           <div style="font-weight:600;" x-text="caLabel(caOptions[0])"></div>
+        </template>
+        <template x-if="caOptions.length > 0 && caOptions.every(c => _daChamCa(c.maCa))">
+          <div style="color:#16a34a;font-weight:600;font-size:.92rem;">✓ Đã hoàn thành tất cả ca hôm nay.</div>
         </template>
         <template x-if="caOptions.length === 0">
           <div style="color:var(--gray-5);font-size:.88rem;">Chưa có ca nào khả dụng. Liên hệ tổ trưởng để phân ca.</div>

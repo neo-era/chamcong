@@ -42,7 +42,10 @@ function chamCongApp() {
     },
     // Ngoài địa bàn (đã xác minh được, không phải lỗi) → chặn chấm
     get ngoaiDiaBan() { return !!(this.gpsEnabled && this.viTri && this.viTri.kiemTra && !this.viTri.loi && !this.viTri.trongDiaBan); },
-    get coTheVao() { return !this.moDang && !this.submitting && this.caOptions.length > 0 && !this.ngoaiDiaBan && !this.checkingVT; },
+    get coTheVao() {
+      const conCaDeCham = this.caOptions.some(c => !this._daChamCa(c.maCa));
+      return !this.moDang && !this.submitting && conCaDeCham && !this.ngoaiDiaBan && !this.checkingVT;
+    },
     get coTheRa()  { return !!this.moDang && !this.submitting && !this.ngoaiDiaBan && !this.checkingVT; },
     get caDangMo() { return this.moDang ? (this.moDang.ca || null) : null; },
 

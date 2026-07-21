@@ -38,6 +38,10 @@ function apiGetChamCongHomNay(user) {
     }
   }
 
+  // Backward compat: frontend cũ (single-shift) đọc trường chamCong & ca
+  const chamCongCompat = moDang || (records.length ? records[records.length - 1] : null);
+  const caCompat = (chamCongCompat && chamCongCompat.maCa ? getCaByMa(chamCongCompat.maCa) : null) || caList[0] || getCaMacDinh();
+
   return {
     ok: true,
     data: {
@@ -46,7 +50,9 @@ function apiGetChamCongHomNay(user) {
       records,
       moDang,
       caChuaRa,
-      tatCaCa: listCa()
+      tatCaCa: listCa(),
+      chamCong: chamCongCompat,
+      ca:       caCompat
     }
   };
 }
@@ -229,6 +235,9 @@ function _fmtNgayVN(ngayStr) {
 // POST action=suaChamCong — HR/Admin only; BẮT BUỘC có lyDo; ghi AuditLog
 // Cho phép sửa cả trangThai thủ công (vd đánh dấu VANG_PHEP/VANG_KHONG_PHEP); nếu không
 // truyền trangThai thì tính lại từ giờ vào/ra theo Điều 7.3.
+// NGOẠI LỆ CÓ CHỦ ĐÍCH: HR/Admin được phép truyền gioVao/gioRa từ client vì đây là
+// thao tác điều chỉnh thủ công (không phải chấm công tự động). Không dùng pattern này
+// cho chamVao/chamRa — hai hàm đó PHẢI lấy new Date() phía server.
 function apiSuaChamCong(user, body) {
   requireQuyen(user, 'SUA_CHAM_CONG');
   const { maCC, gioVao, gioRa, trangThai: trangThaiMoi, lyDo } = body;

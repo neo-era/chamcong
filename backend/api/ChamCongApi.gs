@@ -118,11 +118,30 @@ function apiChamVao(user, body) {
     if (vt.canhBao) canhBao.push(vt.canhBao);
   }
 
+  // Phát hiện tăng cường: ca không có trong lịch phân hôm nay
+  const lichHom = getLichTrucNgayList(user.maNV, ngay);
+  const laTangCuong = !lichHom.some(function(lt) { return String(lt.maCa) === String(ca.maCa); });
+
+  // Cảnh báo nghỉ chuyển ca < 12h khi tăng cường (Điều NQLĐ — chỉ cảnh báo, không chặn)
+  if (laTangCuong) {
+    const recordsHomNay = getChamCongNgayList(user.maNV, ngay);
+    const lastOut = recordsHomNay
+      .filter(function(r) { return r.gioRa; })
+      .sort(function(a, b) { return tsMs(b.gioRa) - tsMs(a.gioRa); })[0];
+    if (lastOut && lastOut.gioRa) {
+      const nghiH = (gioVao.getTime() - tsMs(lastOut.gioRa)) / 3600000;
+      if (nghiH < 12) {
+        canhBao.push('Nghỉ chuyển ca ' + (Math.round(nghiH * 10) / 10) + 'h (quy định ≥12h). HR cần rà soát.');
+      }
+    }
+  }
+
   const grace     = getConfigNumber('grace_minutes', 0);
   const theoGio   = (user.khoi === 'Trực tiếp');   // khối trực tiếp tính theo giờ
   const gioVaoIso = toIsoVN(gioVao);               // lưu giờ VN (+07:00)
   const trangThai = tinhTrangThaiCong(gioVaoIso, null, ca, grace, theoGio);
-  const nguon     = body.toaDo ? 'GPS hiện trường' : 'Trụ sở';
+  const baseNguon = body.toaDo ? 'GPS hiện trường' : 'Trụ sở';
+  const nguon     = laTangCuong ? 'Tăng cường — ' + baseNguon : baseNguon;
   const maCC      = genMaCC(user.maNV, ngay, ca.maCa);
 
   saveChamCong({
@@ -141,6 +160,7 @@ function apiChamVao(user, body) {
       trangThai,
       trangThaiLabel: labelTrangThai(trangThai),
       laCanhBao:   trangThai === 'TRE',
+      laTangCuong,
       diaChi,
       canhBao
     }

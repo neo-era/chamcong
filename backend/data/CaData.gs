@@ -3,15 +3,21 @@
 const CA_SHEET   = 'Ca';
 const CA_HEADERS = ['maCa','tenCa','gioBatDau','gioKetThuc','banDem'];
 
+// NC-G: memo in-execution — sheet Ca ít dòng, không thay đổi trong giờ → cache cả execution.
+let _caMemo = null;
+function _allCa() {
+  if (!_caMemo) _caMemo = sheetToObjects(getSheet(CA_SHEET));
+  return _caMemo;
+}
+function _resetCaMemo() { _caMemo = null; }
+
 function getCaByMa(maCa) {
-  const sh = getSheet(CA_SHEET);
-  const found = findRow(sh, 'maCa', maCa);
-  return found ? found.obj : null;
+  if (!maCa) return null;
+  return _allCa().find(function(o) { return String(o.maCa) === String(maCa); }) || null;
 }
 
 function listCa() {
-  const sh = getSheet(CA_SHEET);
-  return sheetToObjects(sh);
+  return _allCa().slice();
 }
 
 function createCa(ca) {
@@ -20,6 +26,7 @@ function createCa(ca) {
   ca.banDem = ca.banDem === true || ca.banDem === 'true' || ca.banDem === 1;
   const sh = getOrCreateSheet(CA_SHEET, CA_HEADERS);
   appendRow(sh, ca, CA_HEADERS);
+  _resetCaMemo();
 }
 
 function updateCa(maCa, updates) {
@@ -32,6 +39,7 @@ function updateCa(maCa, updates) {
   }
   Object.assign(found.obj, updates);
   updateRow(sh, found.row, found.obj, CA_HEADERS);
+  _resetCaMemo();
 }
 
 // Lấy ca mặc định (khối gián tiếp / khi chưa phân ca)

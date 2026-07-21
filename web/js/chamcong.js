@@ -36,15 +36,24 @@ function chamCongApp() {
     now:         Date.now(),   // cập nhật mỗi phút → giờ công ca đang mở tự động cộng
 
     // ── Computed ─────────────────────────────────────────────────────────────
-    // Danh sách ca chọn được khi chấm vào: ưu tiên ca phân hôm nay, không có → toàn bộ ca.
+    // Danh sách ca chọn được khi chấm vào.
+    // Còn ca phân chưa chấm → dùng lịch phân.
+    // Hết ca phân → tăng cường: toàn bộ ca trừ những ca đã chấm hôm nay.
     get caOptions() {
-      return (this.caList && this.caList.length) ? this.caList : (this.tatCaCa || []);
+      if (this.caList && this.caList.length) {
+        if (this.caList.some(c => !this._daChamCa(c.maCa))) return this.caList;
+        return (this.tatCaCa || []).filter(c => !this._daChamCa(c.maCa));
+      }
+      return (this.tatCaCa || []).filter(c => !this._daChamCa(c.maCa));
+    },
+    // True khi đang ở chế độ tăng cường (ca phân đã xong hết, đang dùng tatCaCa)
+    get laTangCuong() {
+      return !!(this.caList && this.caList.length > 0 && this.caList.every(c => this._daChamCa(c.maCa)));
     },
     // Ngoài địa bàn (đã xác minh được, không phải lỗi) → chặn chấm
     get ngoaiDiaBan() { return !!(this.gpsEnabled && this.viTri && this.viTri.kiemTra && !this.viTri.loi && !this.viTri.trongDiaBan); },
     get coTheVao() {
-      const conCaDeCham = this.caOptions.some(c => !this._daChamCa(c.maCa));
-      return !this.moDang && !this.submitting && conCaDeCham && !this.ngoaiDiaBan && !this.checkingVT;
+      return !this.moDang && !this.submitting && this.caOptions.length > 0 && !this.ngoaiDiaBan && !this.checkingVT;
     },
     get coTheRa()  { return !!this.moDang && !this.submitting && !this.ngoaiDiaBan && !this.checkingVT; },
     get caDangMo() { return this.moDang ? (this.moDang.ca || null) : null; },
@@ -75,10 +84,12 @@ function chamCongApp() {
         this.records = r.data.records || [];
         this.moDang  = r.data.moDang  || null;
         // Mặc định chọn ca đầu tiên còn chưa chấm (nếu có)
-        if (!this.selectedCa && this.caOptions.length) {
-          const chuaCham = this.caOptions.find(c => !this._daChamCa(c.maCa));
-          this.selectedCa = (chuaCham || this.caOptions[0]).maCa;
+        // Reset selectedCa nếu ca cũ không còn trong danh sách (VD: xong ca phân → chuyển tăng cường)
+        const opts = this.caOptions;
+        if (opts.length && (!this.selectedCa || !opts.some(c => String(c.maCa) === String(this.selectedCa)))) {
+          this.selectedCa = opts[0].maCa;
         }
+        if (!opts.length) this.selectedCa = '';
         // Cảnh báo ca cũ chưa chấm ra (không block — chỉ nhắc liên hệ HR)
         if (r.data.caChuaRa) {
           const c = r.data.caChuaRa;
@@ -144,7 +155,8 @@ function chamCongApp() {
         const data = { maCa };
         if (this.gpsEnabled && this.toaDo) data.toaDo = this.toaDo.lat + ',' + this.toaDo.lng;
         const r = await Api.chamVao(data);
-        this.successMsg = '✓ Đã chấm vào ca ' + (r.data.tenCa || '') + ' lúc ' + this._fmtGio(r.data.gioVao);
+        this.successMsg = '✓ Đã chấm vào ca ' + (r.data.tenCa || '') + ' lúc ' + this._fmtGio(r.data.gioVao) +
+          (r.data.laTangCuong ? ' — tăng cường' : '');
         if (r.data.laCanhBao) {
           this.errorMsg = '⚠ Đi trễ — bị đánh dấu mất công ngày này (Điều 7.3 NQLĐ)';
         }

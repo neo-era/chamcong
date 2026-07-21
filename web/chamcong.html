@@ -87,23 +87,33 @@
 
       <!-- CHỌN CA để chấm vào (khi chưa có ca đang mở) -->
       <div x-show="!moDang" style="margin-bottom:1rem;">
-        <label class="form-label">Ca làm việc</label>
-        <template x-if="caOptions.length > 1">
+        <label class="form-label" x-text="laTangCuong ? 'Ca tăng cường' : 'Ca làm việc'"></label>
+
+        <!-- Cảnh báo tăng cường -->
+        <template x-if="laTangCuong">
+          <div style="background:#fffbeb;border:1px solid #f59e0b;border-radius:.4rem;padding:.5rem .75rem;font-size:.83rem;color:#92400e;margin-bottom:.5rem;">
+            ⚠ Ca ngoài lịch phân — sẽ ghi nhận là tăng cường. Đảm bảo nghỉ ≥12h giữa hai ca.
+          </div>
+        </template>
+
+        <!-- Dropdown: nhiều ca hoặc tăng cường -->
+        <template x-if="caOptions.length > 1 || laTangCuong">
           <select class="form-control" x-model="selectedCa">
             <template x-for="c in caOptions" :key="c.maCa">
-              <option :value="c.maCa" :disabled="_daChamCa(c.maCa)"
-                      x-text="caLabel(c) + (_daChamCa(c.maCa) ? ' — đã chấm' : '')"></option>
+              <option :value="c.maCa" x-text="caLabel(c)"></option>
             </template>
           </select>
         </template>
-        <template x-if="caOptions.length === 1 && !_daChamCa(caOptions[0].maCa)">
+
+        <!-- Ca đơn được phân (không tăng cường) -->
+        <template x-if="caOptions.length === 1 && !laTangCuong">
           <div style="font-weight:600;" x-text="caLabel(caOptions[0])"></div>
         </template>
-        <template x-if="caOptions.length > 0 && caOptions.every(c => _daChamCa(c.maCa))">
-          <div style="color:#16a34a;font-weight:600;font-size:.92rem;">✓ Đã hoàn thành tất cả ca hôm nay.</div>
-        </template>
+
+        <!-- Không còn ca nào -->
         <template x-if="caOptions.length === 0">
-          <div style="color:var(--gray-5);font-size:.88rem;">Chưa có ca nào khả dụng. Liên hệ tổ trưởng để phân ca.</div>
+          <div :style="tatCaCa.length ? 'color:#16a34a;font-weight:600;font-size:.92rem;' : 'color:var(--gray-5);font-size:.88rem;'"
+               x-text="tatCaCa.length ? '✓ Đã hoàn thành tất cả ca hôm nay.' : 'Chưa có ca nào khả dụng. Liên hệ tổ trưởng để phân ca.'"></div>
         </template>
       </div>
 

@@ -161,7 +161,7 @@
                 <td x-text="r.ca ? caLabel(r.ca) : (r.maCa || '—')"></td>
                 <td x-text="_fmtGio(r.gioVao)"></td>
                 <td x-text="_fmtGio(r.gioRa)"></td>
-                <td x-text="(r.soGioCong || 0) + 'h'"></td>
+                <td x-text="r.gioRa ? ((r.soGioCong || 0) + 'h') : _gioCongDang(r.gioVao)"></td>
                 <td><span :class="'badge ' + badgeCls(r.trangThai)" x-text="ttLabel(r.trangThai)"></span></td>
                 <td style="font-size:.82rem;color:var(--gray-5);max-width:220px;" x-text="diaChiText(r)"></td>
               </tr>

@@ -33,6 +33,8 @@ function chamCongApp() {
     successMsg:  '',
     warnMsg:     '',
 
+    now:         Date.now(),   // cập nhật mỗi phút → giờ công ca đang mở tự động cộng
+
     // ── Computed ─────────────────────────────────────────────────────────────
     // Danh sách ca chọn được khi chấm vào: ưu tiên ca phân hôm nay, không có → toàn bộ ca.
     get caOptions() {
@@ -58,6 +60,7 @@ function chamCongApp() {
       await this.loadHomNay();
       await this.loadLichSu();
       this.loading = false;
+      setInterval(() => { this.now = Date.now(); }, 60000);
     },
 
     async loadHomNay() {
@@ -205,6 +208,16 @@ function chamCongApp() {
       catch (_) { return str; }
     },
     _clearMsg() { this.errorMsg = ''; this.successMsg = ''; this.warnMsg = ''; },
+
+    // Tính giờ công tạm tính cho ca đang mở (chưa có gioRa) — đọc this.now để Alpine tự cập nhật
+    _gioCongDang(gioVao) {
+      if (!gioVao) return '—';
+      const ms = this.now - new Date(gioVao).getTime();
+      if (ms < 0) return '0h';
+      const h = Math.floor(ms / 3600000);
+      const m = Math.floor((ms % 3600000) / 60000);
+      return h + 'h' + (m > 0 ? m + 'p' : '');
+    },
 
     // Địa chỉ hiển thị: ưu tiên diaChi đã geocode, không có → nguồn (Trụ sở), cuối cùng '—'
     diaChiText(r) { return (r && (r.diaChi || r.nguon)) || '—'; },

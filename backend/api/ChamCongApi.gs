@@ -5,7 +5,6 @@
 // và bản ghi đang mở (đã vào chưa ra — có thể là ca đêm vắt từ hôm qua).
 function apiGetChamCongHomNay(user) {
   const ngay = todayStr();
-<<<<<<< Updated upstream
 
   // Ca được phân hôm nay (đa ca). Không có lịch → ca mặc định (khối gián tiếp).
   const lichCa = getLichTrucNgayList(user.maNV, ngay);
@@ -20,27 +19,12 @@ function apiGetChamCongHomNay(user) {
   const moDangRaw = getChamCongMoDang(user.maNV);
   const moDang = moDangRaw ? Object.assign({}, moDangRaw, { ca: getCaByMa(moDangRaw.maCa) || null }) : null;
 
-  return {
-    ok: true,
-    data: {
-      ngay,
-      caList,                 // ca phân cho hôm nay
-      records,                // đã chấm trong ngày (đa ca)
-      moDang,                 // ca đang mở cần chấm ra (nếu có)
-      tatCaCa: listCa()       // toàn bộ ca — cho phép chọn khi không có lịch (vd tăng cường)
-    }
-  };
-=======
-  const cc   = getChamCongNgay(user.maNV, ngay);
-  const lt   = getLichTrucNgay(user.maNV, ngay);
-  const ca   = lt ? getCaByMa(lt.maCa) : getCaMacDinh();
-
-  // Tìm ca cũ chưa chấm ra (chỉ cần thông báo khi hôm nay chưa có gioVao)
+  // Cảnh báo ca cũ chưa chấm ra (ngoài window moDang — quá cũ, không block check-in)
+  // Nhắc user liên hệ HR để điều chỉnh qua trang Sửa chấm công.
   let caChuaRa = null;
-  if (!cc || !cc.gioVao) {
+  if (!moDang) {
     const tuNgay = _subtractDaysStr(ngay, 30);
     const danhSach = getChamCongKhoang(user.maNV, tuNgay, _subtractDaysStr(ngay, 1));
-    // Tìm bản ghi gần nhất có gioVao nhưng chưa có gioRa
     const caCu = danhSach
       .filter(o => o.gioVao && !o.gioRa)
       .sort((a, b) => String(b.ngay).localeCompare(String(a.ngay)))[0];
@@ -54,14 +38,23 @@ function apiGetChamCongHomNay(user) {
     }
   }
 
-  return { ok: true, data: { chamCong: cc, ca, ngay, caChuaRa } };
+  return {
+    ok: true,
+    data: {
+      ngay,
+      caList,
+      records,
+      moDang,
+      caChuaRa,
+      tatCaCa: listCa()
+    }
+  };
 }
 
 function _subtractDaysStr(ngayStr, days) {
   const d = new Date(ngayStr + 'T00:00:00+07:00');
   d.setDate(d.getDate() - days);
   return Utilities.formatDate(d, 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd');
->>>>>>> Stashed changes
 }
 
 // GET action=getChamCongKhoang&maNV=xxx&tuNgay=yyyy-MM-dd&denNgay=yyyy-MM-dd

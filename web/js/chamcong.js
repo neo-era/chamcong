@@ -62,7 +62,6 @@ function chamCongApp() {
 
     async loadHomNay() {
       try {
-<<<<<<< Updated upstream
         const r = await Api.getChamCongHomNay();
         this.ngay    = r.data.ngay;
         this.caList  = r.data.caList  || [];
@@ -73,15 +72,11 @@ function chamCongApp() {
         if (!this.selectedCa && this.caOptions.length) {
           const chuaCham = this.caOptions.find(c => !this._daChamCa(c.maCa));
           this.selectedCa = (chuaCham || this.caOptions[0]).maCa;
-=======
-        const r     = await Api.getChamCongHomNay();
-        this.chamCong = r.data.chamCong;
-        this.ca       = r.data.ca;
-        this.ngay     = r.data.ngay;
+        }
+        // Cảnh báo ca cũ chưa chấm ra (không block — chỉ nhắc liên hệ HR)
         if (r.data.caChuaRa) {
           const c = r.data.caChuaRa;
           this.warnMsg = `Ca ${c.tenCa} ngày ${c.ngay} (vào lúc ${c.gioVao}) chưa có giờ ra. Hãy liên hệ HR để điều chỉnh.`;
->>>>>>> Stashed changes
         }
       } catch (e) { this.errorMsg = e.message; }
     },
@@ -183,7 +178,6 @@ function chamCongApp() {
       this.refreshing = false;
     },
 
-<<<<<<< Updated upstream
     // ── Utilities ─────────────────────────────────────────────────────────────
     caLabel(ca) {
       if (!ca) return '—';
@@ -210,10 +204,7 @@ function chamCongApp() {
       try { const [y,m,d] = str.substring(0,10).split('-'); return d + '/' + m + '/' + y; }
       catch (_) { return str; }
     },
-    _clearMsg() { this.errorMsg = ''; this.successMsg = ''; },
-=======
     _clearMsg() { this.errorMsg = ''; this.successMsg = ''; this.warnMsg = ''; },
->>>>>>> Stashed changes
 
     // Địa chỉ hiển thị: ưu tiên diaChi đã geocode, không có → nguồn (Trụ sở), cuối cùng '—'
     diaChiText(r) { return (r && (r.diaChi || r.nguon)) || '—'; },

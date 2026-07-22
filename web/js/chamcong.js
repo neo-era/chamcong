@@ -69,8 +69,7 @@ function chamCongApp() {
       } catch (_) { /* dùng thông tin lưu trong sessionStorage */ }
 
       renderHeader('chamcong');
-      await this.loadHomNay();
-      await this.loadLichSu();
+      await this.loadHomNay();   // lịch sử 7 ngày đã gộp bên trong
       this.loading = false;
       setInterval(() => { this.now = Date.now(); }, 60000);
     },
@@ -82,7 +81,8 @@ function chamCongApp() {
         this.caList  = r.data.caList  || [];
         this.tatCaCa = r.data.tatCaCa || [];
         this.records = r.data.records || [];
-        this.moDang  = r.data.moDang  || null;
+        this.moDang      = r.data.moDang  || null;
+        this.danhSachCC  = r.data.lichSu7Ngay || [];
         // Mặc định chọn ca đầu tiên còn chưa chấm (nếu có)
         // Reset selectedCa nếu ca cũ không còn trong danh sách (VD: xong ca phân → chuyển tăng cường)
         const opts = this.caOptions;
@@ -96,16 +96,6 @@ function chamCongApp() {
           this.warnMsg = `Ca ${c.tenCa} ngày ${c.ngay} (vào lúc ${c.gioVao}) chưa có giờ ra. Hãy liên hệ HR để điều chỉnh.`;
         }
       } catch (e) { this.errorMsg = e.message; }
-    },
-
-    async loadLichSu() {
-      try {
-        const den = this.ngay || _todayStr();
-        const tu  = _subtractDays(den, 6);
-        const r   = await Api.getChamCongKhoang({ tuNgay: tu, denNgay: den });
-        this.danhSachCC = r.data.sort((a, b) =>
-          (b.ngay.localeCompare(a.ngay)) || (this._ts(b.gioVao) - this._ts(a.gioVao)));
-      } catch (_) { /* lịch sử không quan trọng */ }
     },
 
     // Đã có bản ghi đã-vào cho ca này trong ngày chưa
@@ -162,7 +152,6 @@ function chamCongApp() {
         }
         if (r.data.canhBao && r.data.canhBao.length) this.canhBaoList = r.data.canhBao;
         await this.loadHomNay();
-        await this.loadLichSu();
       } catch (e) { this.errorMsg = e.message; }
       finally { this.submitting = false; }
     },
@@ -182,7 +171,6 @@ function chamCongApp() {
         }
         if (r.data.canhBao && r.data.canhBao.length) this.canhBaoList = r.data.canhBao;
         await this.loadHomNay();
-        await this.loadLichSu();
       } catch (e) { this.errorMsg = e.message; }
       finally { this.submitting = false; }
     },
@@ -192,7 +180,6 @@ function chamCongApp() {
       this.refreshing = true;
       this._clearMsg(); this.canhBaoList = [];
       await this.loadHomNay();
-      await this.loadLichSu();
       this.refreshing = false;
     },
 

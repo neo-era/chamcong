@@ -49,9 +49,15 @@ function suaChamCongApp() {
     },
 
     async loadNhanVien() {
+      const CACHE_KEY = 'cc_nv_list', CACHE_TTL = 5 * 60 * 1000; // 5 phút
       try {
+        const cached = JSON.parse(sessionStorage.getItem(CACHE_KEY) || 'null');
+        if (cached && cached.ts && (Date.now() - cached.ts) < CACHE_TTL) {
+          this.danhSachNV = cached.data; return;
+        }
         const r = await Api.getNhanVienList({ trangThai: '' });
         this.danhSachNV = r.data;
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: r.data }));
       } catch (e) { this.errorMsg = e.message; }
     },
 

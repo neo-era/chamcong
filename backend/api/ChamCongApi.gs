@@ -38,6 +38,16 @@ function apiGetChamCongHomNay(user) {
     }
   }
 
+  // Lịch sử 7 ngày (gộp vào để frontend chỉ cần 1 GAS call khi load trang)
+  // _allCC() đã là in-execution memo → không tốn thêm Sheets API call.
+  const den7  = ngay;
+  const tu7   = _subtractDaysStr(ngay, 6);
+  const lichSu7Ngay = getChamCongKhoang(user.maNV, tu7, den7)
+    .sort(function(a, b) {
+      var d = String(b.ngay).localeCompare(String(a.ngay));
+      return d !== 0 ? d : (new Date(b.gioVao || 0) - new Date(a.gioVao || 0));
+    });
+
   // Backward compat: frontend cũ (single-shift) đọc trường chamCong & ca
   const chamCongCompat = moDang || (records.length ? records[records.length - 1] : null);
   const caCompat = (chamCongCompat && chamCongCompat.maCa ? getCaByMa(chamCongCompat.maCa) : null) || caList[0] || getCaMacDinh();
@@ -51,6 +61,7 @@ function apiGetChamCongHomNay(user) {
       moDang,
       caChuaRa,
       tatCaCa: listCa(),
+      lichSu7Ngay,
       chamCong: chamCongCompat,
       ca:       caCompat
     }

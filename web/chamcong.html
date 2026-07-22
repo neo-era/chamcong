@@ -81,7 +81,7 @@
                 style="color:#d97706;"> — bản ghi từ ngày <span x-text="moDang ? _fmtNgay(moDang.ngay) : ''"></span>, chưa chấm ra</span>
         </div>
         <div x-show="moDang && _quaHan(moDang)" style="font-size:.8rem;margin-top:.35rem;color:#b91c1c;">
-          ⚠ Ca này đã mở quá lâu — có thể bạn quên chấm ra. Hãy chấm ra để đóng, hoặc nhờ HR sửa ở trang <em>Sửa chấm công</em>.
+          ⚠ Ca này đã mở quá 18h — không thể tự chấm ra. Vui lòng nhờ HR điều chỉnh.
         </div>
       </div>
 
@@ -152,12 +152,21 @@
         <span>▶ CHẤM CÔNG VÀO</span>
       </button>
 
-      <button x-show="moDang" class="cham-cong-btn btn-ra"
-              :disabled="!coTheRa"
-              @click="chamRa()">
-        <span x-show="submitting" class="spinner"></span>
-        <span>■ CHẤM CÔNG RA</span>
-      </button>
+      <!-- CA bình thường: nút chấm ra -->
+      <template x-if="moDang && !_quaHan(moDang)">
+        <button class="cham-cong-btn btn-ra" :disabled="!coTheRa" @click="chamRa()">
+          <span x-show="submitting" class="spinner"></span>
+          <span>■ CHẤM CÔNG RA</span>
+        </button>
+      </template>
+      <!-- Ca quá hạn (>18h): thay bằng link HR -->
+      <template x-if="moDang && _quaHan(moDang)">
+        <a href="sua-cham-cong.html"
+           class="cham-cong-btn btn-ra"
+           style="opacity:.75;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:.5rem;">
+          ↗ Ca quá hạn — Nhờ HR điều chỉnh
+        </a>
+      </template>
     </div>
 
     <!-- Các ca đã chấm trong ngày (đa ca) -->

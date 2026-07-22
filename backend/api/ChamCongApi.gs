@@ -176,6 +176,17 @@ function apiChamRa(user, body) {
   const open = getChamCongMoDang(user.maNV);
   if (!open) throw new Error('Không có ca nào đang mở để chấm ra');
 
+  // Chặn chấm ra cho ca mở quá lâu (quên chấm ra từ ngày trước) → buộc HR điều chỉnh.
+  const gioQuaHan = getConfigNumber('gio_ca_qua_han', 18);
+  const gioDaMo   = (gioRa.getTime() - new Date(open.gioVao).getTime()) / 3600000;
+  if (gioDaMo > gioQuaHan) {
+    const h = Math.round(gioDaMo);
+    throw new Error(
+      'Ca đã mở hơn ' + h + 'h (vào lúc ' + open.gioVao + '). ' +
+      'Vui lòng nhờ HR điều chỉnh tại trang Sửa chấm công.'
+    );
+  }
+
   // Xác minh địa bàn khi có GPS hiện trường (chặn nếu ngoài khu vực; fail-open nếu lỗi)
   const canhBaoVT = [];
   let diaChiRa = '';

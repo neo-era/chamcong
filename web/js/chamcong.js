@@ -55,7 +55,7 @@ function chamCongApp() {
     get coTheVao() {
       return !this.moDang && !this.submitting && this.caOptions.length > 0 && !this.ngoaiDiaBan && !this.checkingVT;
     },
-    get coTheRa()  { return !!this.moDang && !this.submitting && !this.ngoaiDiaBan && !this.checkingVT; },
+    get coTheRa()  { return !!this.moDang && !this.submitting && !this.ngoaiDiaBan && !this.checkingVT && !this._quaHan(this.moDang); },
     get caDangMo() { return this.moDang ? (this.moDang.ca || null) : null; },
 
     // ── Khởi tạo ─────────────────────────────────────────────────────────────

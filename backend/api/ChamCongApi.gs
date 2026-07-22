@@ -64,13 +64,21 @@ function _subtractDaysStr(ngayStr, days) {
 }
 
 // GET action=getChamCongKhoang&maNV=xxx&tuNgay=yyyy-MM-dd&denNgay=yyyy-MM-dd
+// Nếu thiếu tuNgay/denNgay → trả TẤT CẢ bản ghi của NV (dùng cho HR/Admin tìm bản ghi cũ).
 function apiGetChamCongKhoang(user, params) {
-  const maNV   = params.maNV   || user.maNV;
-  const tuNgay = params.tuNgay;
+  const maNV    = params.maNV   || user.maNV;
+  const tuNgay  = params.tuNgay;
   const denNgay = params.denNgay;
-  if (!tuNgay || !denNgay) throw new Error('Thiếu tuNgay hoặc denNgay');
   if (!canViewNV(user, maNV)) throw new Error('Không có quyền xem chấm công của NV này');
-  return { ok: true, data: getChamCongKhoang(maNV, tuNgay, denNgay) };
+  let data;
+  if (!tuNgay || !denNgay) {
+    // Không có range → HR/Admin xem tất cả
+    requireQuyen(user, 'SUA_CHAM_CONG');
+    data = _allCC().filter(function(o) { return o.maNV === maNV; });
+  } else {
+    data = getChamCongKhoang(maNV, tuNgay, denNgay);
+  }
+  return { ok: true, data: data };
 }
 
 // POST action=chamVao  body {maCa?, toaDo?}

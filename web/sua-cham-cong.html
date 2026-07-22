@@ -59,11 +59,17 @@
         <input class="form-control" type="date" x-model="denNgay">
       </div>
       <button class="btn btn-primary" @click="timKiem()">Tìm</button>
+      <button class="btn btn-ghost" @click="timTatCa()" title="Tìm toàn bộ bản ghi không lọc ngày">Tìm tất cả</button>
     </div>
   </div>
 
   <div x-show="loading" style="text-align:center;padding:2rem;">
     <div class="spinner spinner-dark" style="width:2rem;height:2rem;margin:0 auto;"></div>
+  </div>
+
+  <!-- Không tìm thấy -->
+  <div x-show="daTim && !loading && !danhSach.length" class="card" style="padding:1.5rem;text-align:center;color:var(--gray-5);">
+    Không có bản ghi nào. Thử <strong>Tìm tất cả</strong> để xem toàn bộ lịch sử không lọc ngày.
   </div>
 
   <!-- Bảng bản ghi -->

@@ -25,6 +25,7 @@ function suaChamCongApp() {
     maNV:    '',
     tuNgay:  '',
     denNgay: '',
+    daTim:   false,    // đã bấm Tìm ít nhất 1 lần
 
     // Modal sửa
     showModal: false,
@@ -57,14 +58,25 @@ function suaChamCongApp() {
     // ── Tải bản ghi chấm công ───────────────────────────────────────────────────
     async timKiem() {
       this._clearMsg();
-      if (!this.maNV)   { this.errorMsg = 'Chọn nhân viên trước'; return; }
+      if (!this.maNV) { this.errorMsg = 'Chọn nhân viên trước'; return; }
       if (!this.tuNgay || !this.denNgay) { this.errorMsg = 'Chọn khoảng ngày'; return; }
-      this.loading = true;
+      this.loading = true; this.daTim = true;
       try {
         const r = await Api.getChamCongKhoang({ maNV: this.maNV, tuNgay: this.tuNgay, denNgay: this.denNgay });
-        this.danhSach = r.data.sort((a, b) => String(b.ngay).localeCompare(String(a.ngay)));
-        if (!this.danhSach.length) this.successMsg = 'Không có bản ghi nào trong khoảng này';
-      } catch (e) { this.errorMsg = e.message; }
+        this.danhSach = (r.data || []).sort((a, b) => String(b.ngay).localeCompare(String(a.ngay)));
+      } catch (e) { this.errorMsg = e.message; this.danhSach = []; }
+      finally { this.loading = false; }
+    },
+
+    // Tìm TẤT CẢ bản ghi của NV (không lọc ngày) — HR/Admin dùng khi không biết ngày
+    async timTatCa() {
+      this._clearMsg();
+      if (!this.maNV) { this.errorMsg = 'Chọn nhân viên trước'; return; }
+      this.loading = true; this.daTim = true;
+      try {
+        const r = await Api.getChamCongKhoang({ maNV: this.maNV });
+        this.danhSach = (r.data || []).sort((a, b) => String(b.ngay).localeCompare(String(a.ngay)));
+      } catch (e) { this.errorMsg = e.message; this.danhSach = []; }
       finally { this.loading = false; }
     },
 

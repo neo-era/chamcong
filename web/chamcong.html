@@ -80,6 +80,10 @@
           <span x-show="moDang && _fmtNgay(moDang.ngay) !== _fmtNgay(ngay)"
                 style="color:#d97706;"> — bản ghi từ ngày <span x-text="moDang ? _fmtNgay(moDang.ngay) : ''"></span>, chưa chấm ra</span>
         </div>
+        <div style="font-size:.9rem;margin-top:.35rem;color:#166534;font-weight:600;"
+             x-show="moDang && !_quaHan(moDang)">
+          ⏱ Đã làm: <span x-text="_gioCongDang(moDang ? moDang.gioVao : null)"></span>
+        </div>
         <div x-show="moDang && _quaHan(moDang)" style="font-size:.8rem;margin-top:.35rem;color:#b91c1c;">
           ⚠ Ca này đã mở quá 18h — không thể tự chấm ra. Vui lòng nhờ HR điều chỉnh.
         </div>
@@ -204,6 +208,7 @@
               <th>Ca</th>
               <th>Vào</th>
               <th>Ra</th>
+              <th>Giờ công</th>
               <th>Trạng thái</th>
               <th>Địa chỉ</th>
             </tr>
@@ -215,6 +220,7 @@
                 <td x-text="cc.maCa || '—'"></td>
                 <td x-text="_fmtGio(cc.gioVao)"></td>
                 <td x-text="_fmtGio(cc.gioRa)"></td>
+                <td x-text="cc.gioRa ? ((cc.soGioCong || 0) + 'h') : _gioCongDang(cc.gioVao)"></td>
                 <td><span :class="'badge ' + badgeCls(cc.trangThai)" x-text="ttLabel(cc.trangThai)"></span></td>
                 <td style="font-size:.82rem;color:var(--gray-5);max-width:220px;" x-text="diaChiText(cc)"></td>
               </tr>

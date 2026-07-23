@@ -40,7 +40,8 @@
 
   <!-- Tabs -->
   <div class="card" style="padding:.6rem 1rem;display:flex;gap:.5rem;">
-    <button class="btn" :class="tab==='cauhinh' ? 'btn-primary' : 'btn-ghost'" @click="doiTab('cauhinh')">Cấu hình</button>
+    <button class="btn" :class="tab==='cauhinh'  ? 'btn-primary' : 'btn-ghost'" @click="doiTab('cauhinh')">Cấu hình</button>
+    <button class="btn" :class="tab==='matkhau' ? 'btn-primary' : 'btn-ghost'" @click="doiTab('matkhau')">Reset mật khẩu</button>
     <button class="btn" :class="tab==='audit'   ? 'btn-primary' : 'btn-ghost'" @click="doiTab('audit')">Nhật ký (AuditLog)</button>
     <button class="btn" :class="tab==='baotri'  ? 'btn-primary' : 'btn-ghost'" @click="doiTab('baotri')">Bảo trì</button>
   </div>
@@ -69,6 +70,32 @@
         </tbody>
       </table>
     </div>
+  </div>
+
+  <!-- TAB RESET MẬT KHẨU -->
+  <div class="card" x-show="!loading && tab==='matkhau'" style="max-width:480px;">
+    <div class="card-title">Reset mật khẩu nhân viên</div>
+    <p style="font-size:.85rem;color:var(--gray-5);margin:.25rem 0 1rem;">
+      NV sẽ phải đổi mật khẩu ngay khi đăng nhập lần sau.
+    </p>
+    <div class="form-group">
+      <label class="form-label">Nhân viên</label>
+      <select class="form-control" x-model="mkMaNV">
+        <option value="">— Chọn nhân viên —</option>
+        <template x-for="nv in danhSachNV" :key="nv.maNV">
+          <option :value="nv.maNV" x-text="nv.hoTen + ' (' + nv.maNV + ')'"></option>
+        </template>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Mật khẩu mới</label>
+      <input class="form-control" type="text" x-model="mkMoi" placeholder="Tối thiểu 6 ký tự"
+             autocomplete="new-password">
+    </div>
+    <button class="btn btn-primary" @click="resetMK()" :disabled="mkSubmitting">
+      <span x-show="mkSubmitting" class="spinner"></span>
+      <span>🔑 Reset mật khẩu</span>
+    </button>
   </div>
 
   <!-- TAB AUDITLOG -->

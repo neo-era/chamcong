@@ -17,6 +17,12 @@ function quanTriApp() {
     backingUp:  false,
     backupUrl:  '',
 
+    // Reset mật khẩu
+    danhSachNV:  [],
+    mkMaNV:      '',
+    mkMoi:       '',
+    mkSubmitting: false,
+
     // AuditLog
     logs:       [],
     logTotal:   0,
@@ -38,7 +44,8 @@ function quanTriApp() {
 
     async doiTab(t) {
       this.tab = t; this._clearMsg();
-      if (t === 'audit' && !this.logs.length) await this.loadLog();
+      if (t === 'audit'    && !this.logs.length)     await this.loadLog();
+      if (t === 'matkhau'  && !this.danhSachNV.length) await this.loadNV();
     },
 
     // ── CauHinh ──────────────────────────────────────────────────────────────
@@ -55,6 +62,28 @@ function quanTriApp() {
         this.successMsg = 'Đã lưu ' + c.key;
       } catch (e) { this.errorMsg = e.message; }
       finally { this.savingKey = ''; }
+    },
+
+    // ── Reset mật khẩu ───────────────────────────────────────────────────────
+    async loadNV() {
+      try {
+        const r = await Api.getNhanVienList({ trangThai: 'Đang làm' });
+        this.danhSachNV = r.data;
+      } catch (e) { this.errorMsg = e.message; }
+    },
+    async resetMK() {
+      if (!this.mkMaNV)  { this.errorMsg = 'Chọn nhân viên'; return; }
+      if (!this.mkMoi.trim()) { this.errorMsg = 'Nhập mật khẩu mới'; return; }
+      if (this.mkMoi.length < 6) { this.errorMsg = 'Mật khẩu tối thiểu 6 ký tự'; return; }
+      const nv = this.danhSachNV.find(n => n.maNV === this.mkMaNV);
+      if (!confirm('Reset mật khẩu cho ' + (nv ? nv.hoTen : this.mkMaNV) + '?\nNV sẽ phải đổi mật khẩu khi đăng nhập lần sau.')) return;
+      this.mkSubmitting = true; this._clearMsg();
+      try {
+        await Api.resetMatKhau({ maNV: this.mkMaNV, matKhauMoi: this.mkMoi });
+        this.successMsg = 'Đã reset mật khẩu cho ' + (nv ? nv.hoTen + ' (' + this.mkMaNV + ')' : this.mkMaNV);
+        this.mkMoi = '';
+      } catch (e) { this.errorMsg = e.message; }
+      finally { this.mkSubmitting = false; }
     },
 
     // ── Bảo trì ──────────────────────────────────────────────────────────────

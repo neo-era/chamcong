@@ -47,11 +47,13 @@ function reverseGeocode(lat, lng) {
 /**
  * Xác minh vị trí chấm công.
  * @param {string} toaDoStr - 'lat,lng'
+ * @param {string} [diaBanNV] - Địa bàn riêng của NV (chuỗi phường cách nhau bằng dấu phẩy).
+ *   Nếu có → ưu tiên dùng thay cho cấu hình global. Nếu không có → dùng dia_ban_cho_phep.
  * @returns {object} { kiemTra, loi, trongDiaBan, diaChi, duong, phuong, quan, khop, lyDo, canhBao }
  *  - kiemTra=false: hệ thống tắt kiểm tra địa bàn → luôn cho qua.
  *  - loi=true: không xác minh được (toạ độ sai / dịch vụ lỗi) → fail-open: cho qua + cảnh báo.
  */
-function xacMinhViTri(toaDoStr) {
+function xacMinhViTri(toaDoStr, diaBanNV) {
   if (getConfig('kiem_tra_dia_ban') !== 'TRUE') {
     return { kiemTra: false, loi: false, trongDiaBan: true, diaChi: '' };
   }
@@ -66,7 +68,11 @@ function xacMinhViTri(toaDoStr) {
     return { kiemTra: true, loi: true, trongDiaBan: true, diaChi: '', canhBao: 'Không xác minh được khu vực (lỗi dịch vụ bản đồ) — đã ghi nhận tạm, HR rà soát sau' };
   }
 
-  const kq = kiemTraDiaBan(geo.address, _diaBanConfig());
+  // Dùng địa bàn riêng của NV nếu có; không có → dùng config global
+  const cfg = (diaBanNV && diaBanNV.trim())
+    ? { khuVuc: diaBanNV.split(',').map(function(s) { return s.trim(); }).filter(Boolean) }
+    : _diaBanConfig();
+  const kq = kiemTraDiaBan(geo.address, cfg);
   return {
     kiemTra: true, loi: false,
     trongDiaBan: kq.trongDiaBan,

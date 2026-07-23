@@ -125,17 +125,15 @@ function apiChamVao(user, body) {
     throw new Error('Đã chấm vào ca ' + ca.tenCa + ' hôm nay lúc ' + _formatGio(trung.gioVao));
   }
 
-  // Xác minh địa bàn khi có GPS hiện trường (chặn nếu ngoài khu vực; fail-open nếu lỗi dịch vụ)
+  // GPS bắt buộc — chặn nếu không có toạ độ hoặc ngoài khu vực; fail-open nếu dịch vụ lỗi
+  if (!body.toaDo) throw new Error('Chấm công bắt buộc kèm toạ độ GPS. Hãy cho phép trình duyệt truy cập vị trí và thử lại.');
   const canhBao = [];
-  let diaChi = '';
-  if (body.toaDo) {
-    const vt = xacMinhViTri(body.toaDo);
-    diaChi = vt.diaChi || '';
-    if (vt.kiemTra && !vt.loi && !vt.trongDiaBan) {
-      throw new Error('Ngoài khu vực làm việc' + (diaChi ? ' (' + diaChi + ')' : '') + ' — không thể ghi nhận công.');
-    }
-    if (vt.canhBao) canhBao.push(vt.canhBao);
+  const vtVao = xacMinhViTri(body.toaDo, user.diaBan || '');
+  let diaChi = vtVao.diaChi || '';
+  if (vtVao.kiemTra && !vtVao.loi && !vtVao.trongDiaBan) {
+    throw new Error('Ngoài khu vực làm việc' + (diaChi ? ' (' + diaChi + ')' : '') + ' — không thể ghi nhận công.');
   }
+  if (vtVao.canhBao) canhBao.push(vtVao.canhBao);
 
   // Phát hiện tăng cường: ca không có trong lịch phân hôm nay
   const lichHom = getLichTrucNgayList(user.maNV, ngay);
@@ -206,17 +204,15 @@ function apiChamRa(user, body) {
     );
   }
 
-  // Xác minh địa bàn khi có GPS hiện trường (chặn nếu ngoài khu vực; fail-open nếu lỗi)
+  // GPS bắt buộc — chặn nếu không có toạ độ hoặc ngoài khu vực; fail-open nếu dịch vụ lỗi
+  if (!body.toaDo) throw new Error('Chấm công bắt buộc kèm toạ độ GPS. Hãy cho phép trình duyệt truy cập vị trí và thử lại.');
   const canhBaoVT = [];
-  let diaChiRa = '';
-  if (body.toaDo) {
-    const vt = xacMinhViTri(body.toaDo);
-    diaChiRa = vt.diaChi || '';
-    if (vt.kiemTra && !vt.loi && !vt.trongDiaBan) {
-      throw new Error('Ngoài khu vực làm việc' + (diaChiRa ? ' (' + diaChiRa + ')' : '') + ' — không thể ghi nhận công.');
-    }
-    if (vt.canhBao) canhBaoVT.push(vt.canhBao);
+  const vtRa = xacMinhViTri(body.toaDo, user.diaBan || '');
+  let diaChiRa = vtRa.diaChi || '';
+  if (vtRa.kiemTra && !vtRa.loi && !vtRa.trongDiaBan) {
+    throw new Error('Ngoài khu vực làm việc' + (diaChiRa ? ' (' + diaChiRa + ')' : '') + ' — không thể ghi nhận công.');
   }
+  if (vtRa.canhBao) canhBaoVT.push(vtRa.canhBao);
 
   const ca    = getCaByMa(open.maCa) || getCaMacDinh();
   const grace = getConfigNumber('grace_minutes', 0);

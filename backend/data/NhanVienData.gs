@@ -2,7 +2,7 @@
 
 const NV_SHEET   = 'NhanVien';
 const NV_HEADERS = ['maNV','hoTen','donVi','khoi','chucDanh','dieuKienCV',
-                    'ngayVaoLam','quanLyTrucTiep','trangThai','email','vaiTro','matKhau','salt','phaiDoiMK'];
+                    'ngayVaoLam','quanLyTrucTiep','trangThai','email','vaiTro','matKhau','salt','phaiDoiMK','diaBan'];
 
 // Số vòng lặp băm (chống brute-force). Chỉ chạy khi đăng nhập/đổi mật khẩu.
 const SALT_ITER = 1000;

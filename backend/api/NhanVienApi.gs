@@ -24,10 +24,10 @@ function apiGetNhanVien(user, params) {
 function apiCreateNhanVien(user, body) {
   requireQuyen(user, 'QUAN_LY_NV');
   const { maNV, hoTen, donVi, khoi, chucDanh, dieuKienCV, ngayVaoLam,
-          quanLyTrucTiep, trangThai, email, vaiTro } = body;
+          quanLyTrucTiep, trangThai, email, vaiTro, diaBan } = body;
   if (!maNV || !hoTen || !email) throw new Error('maNV, hoTen và email là bắt buộc');
   createNV({ maNV, hoTen, donVi, khoi, chucDanh, dieuKienCV, ngayVaoLam,
-             quanLyTrucTiep, trangThai, email, vaiTro });
+             quanLyTrucTiep, trangThai, email, vaiTro, diaBan });
   appendLog(user.maNV, user.email, 'TAO_NV', 'NhanVien', { maNV, hoTen, email });
   return { ok: true, message: 'Đã tạo nhân viên ' + maNV };
 }

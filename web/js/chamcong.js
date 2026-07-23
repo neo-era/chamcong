@@ -21,9 +21,9 @@ function chamCongApp() {
     danhSachCC:  [],     // lịch sử (7 ngày)
     canhBaoList: [],     // cảnh báo trần giờ sau khi chấm ra
 
-    // GPS
+    // GPS (bắt buộc — auto-bật khi init)
     gpsEnabled:  false,
-    gpsLoading:  false,
+    gpsLoading:  true,   // true ngay từ đầu → hiển thị "đang lấy GPS" khi trang mở
     toaDo:       null,
     viTri:       null,     // kết quả xác minh địa bàn { trongDiaBan, diaChi, loi, canhBao }
     checkingVT:  false,
@@ -53,9 +53,15 @@ function chamCongApp() {
     // Ngoài địa bàn (đã xác minh được, không phải lỗi) → chặn chấm
     get ngoaiDiaBan() { return !!(this.gpsEnabled && this.viTri && this.viTri.kiemTra && !this.viTri.loi && !this.viTri.trongDiaBan); },
     get coTheVao() {
-      return !this.moDang && !this.submitting && this.caOptions.length > 0 && !this.ngoaiDiaBan && !this.checkingVT;
+      return !this.moDang && !this.submitting && this.caOptions.length > 0
+        && !this.ngoaiDiaBan && !this.checkingVT && !this.gpsLoading
+        && this.gpsEnabled && !!this.viTri;
     },
-    get coTheRa()  { return !!this.moDang && !this.submitting && !this.ngoaiDiaBan && !this.checkingVT && !this._quaHan(this.moDang); },
+    get coTheRa() {
+      return !!this.moDang && !this.submitting && !this.ngoaiDiaBan && !this.checkingVT
+        && !this.gpsLoading && !this._quaHan(this.moDang)
+        && this.gpsEnabled && !!this.viTri;
+    },
     get caDangMo() { return this.moDang ? (this.moDang.ca || null) : null; },
 
     // ── Khởi tạo ─────────────────────────────────────────────────────────────
@@ -72,6 +78,7 @@ function chamCongApp() {
       await this.loadHomNay();   // lịch sử 7 ngày đã gộp bên trong
       this.loading = false;
       setInterval(() => { this.now = Date.now(); }, 60000);
+      this.toggleGPS();          // auto-bật GPS bắt buộc, không await (gpsLoading đã = true)
     },
 
     async loadHomNay() {

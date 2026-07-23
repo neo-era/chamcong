@@ -5,5 +5,5 @@
 function apiKiemTraViTri(user, params) {
   requireQuyen(user, 'CHAM_CONG');
   if (!params.toaDo) throw new Error('Thiếu toạ độ');
-  return { ok: true, data: xacMinhViTri(params.toaDo) };
+  return { ok: true, data: xacMinhViTri(params.toaDo, user.diaBan || '') };
 }

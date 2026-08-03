@@ -6,6 +6,10 @@ function doGet(e) {
   try {
     const params = e.parameter || {};
     const action = params.action || '';
+    // Endpoint công khai — không cần token
+    if (action === 'getPhienBan') {
+      return _jsonOk({ version: getConfig('app_version') || '1.0.1' });
+    }
     const user   = verifyAndGetUser(params.token);
     const result = _routeGet(action, user, params);
     return _jsonOk(result);

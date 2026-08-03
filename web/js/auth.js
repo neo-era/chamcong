@@ -90,6 +90,8 @@ function renderHeader(activePage) {
 
   // NC-G: chuông thông báo + badge đơn chờ duyệt — gộp vào 1 request (getHeaderInfo).
   _setupHeaderInfo(activePage, vaiTro);
+  _showVersionBadge();
+  checkBackendVersion();
 }
 
 // NC-E + NC-G: dựng chuông thông báo và badge "Duyệt đơn", tải dữ liệu trong 1 request.
@@ -179,6 +181,68 @@ function _vaiTroLabel(vaiTro) {
            BGD:'Ban giám đốc', HR:'Nhân sự', Admin:'Quản trị' }[vaiTro] || vaiTro;
 }
 
+// ── Hiển thị banner cập nhật ──────────────────────────────────────────────────
+function _showUpdateBanner(newVersion) {
+  if (document.getElementById('cc-update-banner')) return;
+  const bar = document.createElement('div');
+  bar.id = 'cc-update-banner';
+  bar.style.cssText = [
+    'position:fixed;bottom:2.5rem;left:50%;transform:translateX(-50%)',
+    'background:#1a56db;color:#fff;padding:.65rem 1.2rem',
+    'border-radius:2rem;box-shadow:0 4px 18px rgba(0,0,0,.35)',
+    'font-size:.88rem;font-weight:600;cursor:pointer',
+    'z-index:9999;display:flex;align-items:center;gap:.6rem',
+    'white-space:nowrap;animation:cc-slidein .3s ease'
+  ].join(';');
+  bar.innerHTML = '⬆ Có bản cập nhật mới — nhấn để tải lại'
+    + (newVersion ? ' <span style="opacity:.7;font-weight:400;font-size:.8rem">(' + newVersion + ')</span>' : '');
+  bar.addEventListener('click', function () {
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+    }
+    window.location.reload(true);
+  });
+  if (!document.getElementById('cc-update-style')) {
+    const s = document.createElement('style');
+    s.id = 'cc-update-style';
+    s.textContent = '@keyframes cc-slidein{from{opacity:0;transform:translateX(-50%) translateY(1rem)}to{opacity:1;transform:translateX(-50%) translateY(0)}}';
+    document.head.appendChild(s);
+  }
+  document.body.appendChild(bar);
+}
+
+// ── Hiển thị badge phiên bản góc dưới phải ───────────────────────────────────
+function _showVersionBadge() {
+  if (document.getElementById('cc-ver-badge')) return;
+  const v = (typeof CONFIG !== 'undefined' && CONFIG.APP_VERSION) ? CONFIG.APP_VERSION : '';
+  if (!v) return;
+  const el = document.createElement('div');
+  el.id = 'cc-ver-badge';
+  el.title = 'Phiên bản ứng dụng';
+  el.textContent = 'v' + v;
+  el.style.cssText = [
+    'position:fixed;bottom:.4rem;right:.6rem',
+    'font-size:.68rem;color:rgba(0,0,0,.3);pointer-events:none;z-index:100',
+    'user-select:none;letter-spacing:.02em'
+  ].join(';');
+  document.body.appendChild(el);
+}
+
+// ── Kiểm tra phiên bản với backend (1 lần/session) ────────────────────────────
+async function checkBackendVersion() {
+  if (typeof CONFIG === 'undefined' || !CONFIG.BACKEND_URL || !CONFIG.APP_VERSION) return;
+  const key = 'cc_ver_checked';
+  if (sessionStorage.getItem(key)) return;
+  sessionStorage.setItem(key, '1');
+  try {
+    const r = await fetch(CONFIG.BACKEND_URL + '?action=getPhienBan');
+    const d = await r.json();
+    if (d.ok && d.version && String(d.version) !== String(CONFIG.APP_VERSION)) {
+      _showUpdateBanner(d.version);
+    }
+  } catch (_) {}
+}
+
 // NC-H: PWA — gắn manifest + đăng ký service worker (chạy trên mọi trang có auth.js)
 (function () {
   try {
@@ -188,6 +252,10 @@ function _vaiTroLabel(vaiTro) {
       document.head.appendChild(l);
     }
     if ('serviceWorker' in navigator) {
+      // Lắng nghe message từ SW (UPDATE_READY)
+      navigator.serviceWorker.addEventListener('message', function (e) {
+        if (e.data && e.data.type === 'UPDATE_READY') _showUpdateBanner(e.data.version);
+      });
       window.addEventListener('load', function () {
         navigator.serviceWorker.register('sw.js').catch(function () {});
       });

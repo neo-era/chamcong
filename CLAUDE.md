@@ -50,7 +50,16 @@ NV → Tổ/Đội trưởng (duyệt cấp 1) → Trưởng/Phó đơn vị (c�
 
 ## Trạng thái hiện tại
 
-**GĐ1 đã có code đầy đủ.** Cần điền `SPREADSHEET_ID` vào `backend/data/SheetHelper.gs` rồi deploy theo `SETUP.md`.
+**GĐ1 đã deploy và đang chạy thực tế.**
+
+Deployment ID: `AKfycbx7UyS8jWiPskvBV6BLC8Gdj8cX0rp7b0TsvsY6uefPxEwjIvEkBeqP-a7QtxTAid1xAQ`  
+Phiên bản hiện tại: **1.0.1**
+
+Quy trình deploy:
+```
+clasp push --force
+clasp deploy --deploymentId AKfycbx7UyS8jWiPskvBV6BLC8Gdj8cX0rp7b0TsvsY6uefPxEwjIvEkBeqP-a7QtxTAid1xAQ --description "mô tả"
+```
 
 ---
 
@@ -84,6 +93,28 @@ Xem `backend/rules/QuyenRules.gs` — `QUYEN_MAP` là nguồn chân lý duy nh�
 `DU_CONG` / `TRE` / `SOM` / `MAT_CONG` / `VANG_PHEP` / `VANG_KHONG_PHEP`
 
 `TRE` và `SOM` → đều tính là "bỏ việc ngày đó" (Điều 7.3). Dùng `laBoViec(trangThai)` để kiểm tra.
+
+### Xác thực (Auth)
+
+- Mật khẩu lưu **plaintext** trong cột `matKhau` sheet NhanVien (không hash).
+- So sánh bằng `String(nv.matKhau) === String(matKhauRaw)` (tránh lỗi number vs string từ Sheets).
+- Không khoá tài khoản khi nhập sai.
+- `_resetNVMemo()` được gọi trong `apiLogin` để luôn đọc tươi từ sheet.
+- Cột `salt` còn trong header nhưng để trống — không dùng.
+
+### Versioning & Auto-update
+
+- `CONFIG.APP_VERSION` trong `web/js/config.js` — tăng mỗi lần release.
+- `const CACHE` trong `web/sw.js` — đổi cho khớp APP_VERSION mỗi lần release.
+- `app_version` trong sheet **CauHinh** — Admin sửa để trigger thông báo cập nhật.
+- `GET action=getPhienBan` (không cần auth) — backend trả version từ CauHinh.
+- Khi version mới: banner xanh "⬆ Có bản cập nhật" hiện ở giữa màn hình; badge `v1.0.x` ở góc dưới phải.
+
+### GPS & Địa bàn
+
+- Chấm vào/ra **bắt buộc có GPS**; từ chối nếu ngoài địa bàn (`kiem_tra_dia_ban=TRUE` trong CauHinh).
+- Mỗi NV có thể được gán cột `diaBan` (chuỗi phường cách nhau bằng dấu phẩy) riêng, ưu tiên hơn config global.
+- Danh sách 168 phường/xã mới TP.HCM (Nghị quyết 202/2025/QH15) trong `web/js/nhanvien.js` — dùng `{ label, value }` object.
 
 ---
 

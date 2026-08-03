@@ -94,7 +94,7 @@ function datMatKhau(maNV, matKhauRaw, batBuocDoi) {
 // Kiểm tra mật khẩu (so sánh thẳng).
 function kiemTraMatKhau(nv, matKhauRaw) {
   if (!nv || !nv.matKhau) return false;
-  return nv.matKhau === matKhauRaw;
+  return String(nv.matKhau) === String(matKhauRaw);
 }
 
 // ── Tiện ích dùng trong Apps Script Editor ──────────────────────────────────

@@ -17,6 +17,7 @@ function apiLogin(body) {
   if (!email || !matKhau) throw new Error('Vui lòng nhập email và mật khẩu');
   const em = email.trim().toLowerCase();
 
+  _resetNVMemo();   // luôn đọc tươi từ sheet khi đăng nhập
   const nv = getNVByEmail(em);
   if (!nv) throw new Error('Email không tồn tại trong hệ thống');
   if (nv.trangThai === 'Nghỉ việc') throw new Error('Tài khoản đã bị vô hiệu hoá');

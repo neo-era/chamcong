@@ -4,8 +4,7 @@ const NV_SHEET   = 'NhanVien';
 const NV_HEADERS = ['maNV','hoTen','donVi','khoi','chucDanh','dieuKienCV',
                     'ngayVaoLam','quanLyTrucTiep','trangThai','email','vaiTro','matKhau','salt','phaiDoiMK','diaBan'];
 
-// Số vòng lặp băm (chống brute-force). Chỉ chạy khi đăng nhập/đổi mật khẩu.
-const SALT_ITER = 1000;
+
 
 // NC-G: in-execution memo + CacheService 60s → tránh đọc sheet NhanVien mỗi request.
 const _NV_CACHE_KEY = 'cc_nv_v1';
@@ -78,58 +77,31 @@ function addMatKhauColumn() {
 }
 function addSaltColumn() { addMatKhauColumn(); }   // alias
 
-// ── Băm mật khẩu có salt ─────────────────────────────────────────────────────
-function _genSalt() {
-  return Utilities.getUuid().replace(/-/g, '');   // 32 ký tự hex ngẫu nhiên
-}
-
-// Băm có salt + lặp SALT_ITER vòng (chống dò mật khẩu yếu + chống rainbow table).
-function _hashSalted(raw, salt) {
-  let h = salt + '|' + raw;
-  for (let i = 0; i < SALT_ITER; i++) h = _hashSHA256(h + salt);
-  return h;
-}
-
-// Đặt mật khẩu (sinh salt mới + băm + lưu). Nguồn chân lý duy nhất để ghi mật khẩu.
+// Đặt mật khẩu (lưu thẳng, không băm).
 // batBuocDoi=true (mặc định): đánh dấu phaiDoiMK (Admin/import/reset đặt). User tự đổi → false.
 function datMatKhau(maNV, matKhauRaw, batBuocDoi) {
   addMatKhauColumn();
-  const salt = _genSalt();
-  const hash = _hashSalted(matKhauRaw, salt);
   const sh = getSheet(NV_SHEET);
   const found = findRow(sh, 'maNV', maNV);
   if (!found) throw new Error('Không tìm thấy NV: ' + maNV);
-  found.obj.matKhau = hash;
-  found.obj.salt = salt;
+  found.obj.matKhau = matKhauRaw;
+  found.obj.salt = '';
   found.obj.phaiDoiMK = (batBuocDoi === false) ? '' : 'TRUE';
   updateRow(sh, found.row, found.obj, NV_HEADERS);
   _resetNVMemo();
 }
 
-// Kiểm tra mật khẩu. Tự NÂNG CẤP bản ghi cũ (hash không salt) sang salted khi đăng nhập đúng.
+// Kiểm tra mật khẩu (so sánh thẳng).
 function kiemTraMatKhau(nv, matKhauRaw) {
   if (!nv || !nv.matKhau) return false;
-  if (nv.salt) {
-    return _hashSalted(matKhauRaw, nv.salt) === nv.matKhau;
-  }
-  // Bản ghi cũ: so hash SHA-256 không salt; nếu đúng → nâng cấp sang salted
-  if (_hashSHA256(matKhauRaw) === nv.matKhau) {
-    try { datMatKhau(nv.maNV, matKhauRaw); } catch (_) {}
-    return true;
-  }
-  return false;
+  return nv.matKhau === matKhauRaw;
 }
 
 // ── Tiện ích dùng trong Apps Script Editor ──────────────────────────────────
 // Admin chạy: setPassword('NV001', 'matkhau123')
 function setPassword(maNV, matKhauRaw) {
   datMatKhau(maNV, matKhauRaw);
-  Logger.log('✓ Đã đặt mật khẩu (có salt) cho ' + maNV);
-}
-
-function _hashSHA256(str) {
-  const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, str, Utilities.Charset.UTF_8);
-  return digest.map(b => ('0' + (b & 0xff).toString(16)).slice(-2)).join('');
+  Logger.log('✓ Đã đặt mật khẩu cho ' + maNV);
 }
 
 // Tính số năm thâm niên (dùng cho quota phép)

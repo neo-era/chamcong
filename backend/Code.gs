@@ -28,8 +28,10 @@ function doPost(e) {
   try {
     const action = body.action || '';
 
-    // Route login không cần xác minh token trước
-    if (action === 'login') return _jsonOk(apiLogin(body));
+    // Route không cần token
+    if (action === 'login')        return _jsonOk(apiLogin(body));
+    if (action === 'guiOTP')       return _jsonOk(apiGuiOTP(body));
+    if (action === 'datLaiMatKhau') return _jsonOk(apiDatLaiMatKhau(body));
 
     const user   = verifyAndGetUser(body.token);
     const result = _routePost(action, user, body);

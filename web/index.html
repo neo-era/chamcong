@@ -8,7 +8,7 @@
 </head>
 <body>
   <div class="login-wrap">
-    <div class="login-card" x-data="loginApp()">
+    <div class="login-card" x-data="loginApp()" style="max-width:380px;">
       <div class="login-logo">⚡ CSCC</div>
       <div style="font-size:1.1rem;font-weight:700;margin-bottom:.25rem;">Hệ thống Chấm công</div>
       <div class="login-sub">Chiếu sáng khu vực Trung tâm</div>
@@ -37,7 +37,64 @@
         </button>
       </form>
 
-      <p style="margin-top:1.25rem;font-size:.78rem;color:var(--gray-5);text-align:center;">
+      <!-- Link quên mật khẩu -->
+      <div style="text-align:center;margin-top:.9rem;">
+        <button type="button" @click="buoc='otp'; errorMsg=''; otpMsg=''"
+                style="background:none;border:none;color:#1a56db;font-size:.82rem;cursor:pointer;text-decoration:underline;"
+                x-show="buoc==='login'">Quên mật khẩu?</button>
+        <button type="button" @click="buoc='login'; errorMsg=''"
+                style="background:none;border:none;color:#1a56db;font-size:.82rem;cursor:pointer;text-decoration:underline;"
+                x-show="buoc!=='login'">← Quay lại đăng nhập</button>
+      </div>
+
+      <!-- Bước 1: nhập email lấy OTP -->
+      <div x-show="buoc==='otp'" style="margin-top:1rem;">
+        <div style="font-size:.85rem;color:var(--gray-6);margin-bottom:.75rem;text-align:center;">
+          Nhập email để nhận mã xác nhận
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input class="form-control" type="email" x-model="emailQuen" placeholder="email@cscc.vn" :disabled="loading">
+        </div>
+        <div x-show="errorMsg" x-text="errorMsg" class="alert alert-danger" style="margin-top:.5rem;"></div>
+        <div x-show="otpMsg" x-text="otpMsg" class="alert alert-success" style="margin-top:.5rem;"></div>
+        <button type="button" class="btn btn-primary" style="width:100%;margin-top:.75rem;"
+                @click="doGuiOTP()" :disabled="loading">
+          <span x-show="!loading">Gửi mã xác nhận</span>
+          <span x-show="loading">Đang gửi…</span>
+        </button>
+      </div>
+
+      <!-- Bước 2: nhập OTP + mật khẩu mới -->
+      <div x-show="buoc==='reset'" style="margin-top:1rem;">
+        <div style="font-size:.85rem;color:var(--gray-6);margin-bottom:.75rem;text-align:center;">
+          Nhập mã vừa gửi về <strong x-text="emailQuen"></strong>
+        </div>
+        <div class="form-group">
+          <label>Mã xác nhận (6 số)</label>
+          <input class="form-control" type="text" x-model="otp" placeholder="123456"
+                 maxlength="6" inputmode="numeric" :disabled="loading">
+        </div>
+        <div class="form-group" style="margin-top:.6rem;">
+          <label>Mật khẩu mới</label>
+          <input class="form-control" type="text" x-model="matKhauMoi" placeholder="Nhập mật khẩu mới" :disabled="loading">
+        </div>
+        <div x-show="errorMsg" x-text="errorMsg" class="alert alert-danger" style="margin-top:.5rem;"></div>
+        <div x-show="otpMsg"   x-text="otpMsg"   class="alert alert-success" style="margin-top:.5rem;"></div>
+        <button type="button" class="btn btn-primary" style="width:100%;margin-top:.75rem;"
+                @click="doDatLai()" :disabled="loading">
+          <span x-show="!loading">Đặt lại mật khẩu</span>
+          <span x-show="loading">Đang xử lý…</span>
+        </button>
+        <div style="text-align:center;margin-top:.5rem;">
+          <button type="button" @click="doGuiOTP()"
+                  style="background:none;border:none;color:#6b7280;font-size:.78rem;cursor:pointer;text-decoration:underline;"
+                  :disabled="loading">Gửi lại mã</button>
+        </div>
+      </div>
+
+      <p style="margin-top:1.25rem;font-size:.78rem;color:var(--gray-5);text-align:center;"
+         x-show="buoc==='login'">
         Tài khoản do HR/Admin cấp.<br>Liên hệ Admin nếu không vào được.
       </p>
     </div>
@@ -49,10 +106,11 @@
   <script>
     function loginApp() {
       return {
-        email: '',
-        matKhau: '',
-        loading: false,
-        errorMsg: '',
+        email: '', matKhau: '',
+        loading: false, errorMsg: '',
+        // quên mật khẩu
+        buoc: 'login',   // 'login' | 'otp' | 'reset'
+        emailQuen: '', otp: '', matKhauMoi: '', otpMsg: '',
 
         init() {
           if (isLoggedIn()) {
@@ -63,18 +121,50 @@
         },
 
         async doLogin() {
-          this.errorMsg = '';
-          this.loading  = true;
+          this.errorMsg = ''; this.loading = true;
           try {
             await login(this.email, this.matKhau);
             const redirect = sessionStorage.getItem('cc_redirect') || 'chamcong.html';
             sessionStorage.removeItem('cc_redirect');
             window.location.href = redirect;
-          } catch (e) {
-            this.errorMsg = e.message;
-          } finally {
-            this.loading = false;
-          }
+          } catch (e) { this.errorMsg = e.message; }
+          finally { this.loading = false; }
+        },
+
+        async doGuiOTP() {
+          this.errorMsg = ''; this.otpMsg = '';
+          if (!this.emailQuen) { this.errorMsg = 'Vui lòng nhập email'; return; }
+          this.loading = true;
+          try {
+            const res = await fetch(CONFIG.BACKEND_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              body: JSON.stringify({ action: 'guiOTP', email: this.emailQuen })
+            });
+            const d = await res.json();
+            if (!d.ok) throw new Error(d.error || 'Lỗi gửi mã');
+            this.otpMsg = d.message;
+            this.buoc = 'reset';
+          } catch (e) { this.errorMsg = e.message; }
+          finally { this.loading = false; }
+        },
+
+        async doDatLai() {
+          this.errorMsg = ''; this.otpMsg = '';
+          if (!this.otp || !this.matKhauMoi) { this.errorMsg = 'Vui lòng nhập đủ thông tin'; return; }
+          this.loading = true;
+          try {
+            const res = await fetch(CONFIG.BACKEND_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              body: JSON.stringify({ action: 'datLaiMatKhau', email: this.emailQuen, otp: this.otp, matKhauMoi: this.matKhauMoi })
+            });
+            const d = await res.json();
+            if (!d.ok) throw new Error(d.error || 'Lỗi đặt lại mật khẩu');
+            this.otpMsg = d.message;
+            setTimeout(() => { this.buoc = 'login'; this.otp = ''; this.matKhauMoi = ''; this.otpMsg = ''; }, 2000);
+          } catch (e) { this.errorMsg = e.message; }
+          finally { this.loading = false; }
         }
       };
     }

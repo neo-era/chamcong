@@ -86,45 +86,18 @@ function apiGetProfile(user) {
   };
 }
 
-// ── Quên mật khẩu: gửi OTP về email ─────────────────────────────────────────
-function apiGuiOTP(body) {
+// ── Quên mật khẩu: đặt lại không cần xác thực ───────────────────────────────
+function apiDatLaiMatKhau(body) {
   const em = (body.email || '').trim().toLowerCase();
-  if (!em) throw new Error('Vui lòng nhập email');
+  const mk = String(body.matKhauMoi || '').trim();
+  if (!em || !mk) throw new Error('Vui lòng nhập đủ thông tin');
+  if (mk.length < 4) throw new Error('Mật khẩu mới phải có ít nhất 4 ký tự');
   const nv = getNVByEmail(em);
   if (!nv) throw new Error('Email không tồn tại trong hệ thống');
   if (nv.trangThai === 'Nghỉ việc') throw new Error('Tài khoản đã bị vô hiệu hoá');
-
-  // Sinh OTP 6 số, lưu cache 15 phút
-  const otp = String(Math.floor(100000 + Math.random() * 900000));
-  CacheService.getScriptCache().put('otp_' + em, otp, 900);
-
-  const ten = nv.hoTen || em;
-  MailApp.sendEmail({
-    to: em,
-    subject: '[CSCC] Mã đặt lại mật khẩu',
-    body: 'Xin chào ' + ten + ',\n\nMã đặt lại mật khẩu của bạn là:\n\n  ' + otp + '\n\nMã có hiệu lực trong 15 phút. Không chia sẻ mã này cho người khác.\n\nNếu bạn không yêu cầu, hãy bỏ qua email này.\n\n— Hệ thống Chấm công CSCC'
-  });
-  return { ok: true, message: 'Đã gửi mã xác nhận về ' + em };
-}
-
-// ── Quên mật khẩu: xác nhận OTP + đặt mật khẩu mới ─────────────────────────
-function apiDatLaiMatKhau(body) {
-  const em  = (body.email || '').trim().toLowerCase();
-  const otp = String(body.otp || '').trim();
-  const mk  = String(body.matKhauMoi || '').trim();
-  if (!em || !otp || !mk) throw new Error('Thiếu thông tin');
-  if (mk.length < 4) throw new Error('Mật khẩu mới phải có ít nhất 4 ký tự');
-
-  const cached = CacheService.getScriptCache().get('otp_' + em);
-  if (!cached) throw new Error('Mã xác nhận đã hết hạn. Vui lòng gửi lại.');
-  if (cached !== otp) throw new Error('Mã xác nhận không đúng');
-
-  const nv = getNVByEmail(em);
-  if (!nv) throw new Error('Tài khoản không tồn tại');
   datMatKhau(nv.maNV, mk, false);
-  CacheService.getScriptCache().remove('otp_' + em);
   appendLog(nv.maNV, em, 'DAT_LAI_MAT_KHAU', 'Auth', {});
-  return { ok: true, message: 'Đã đặt lại mật khẩu thành công. Vui lòng đăng nhập.' };
+  return { ok: true, message: 'Đã đặt lại mật khẩu. Vui lòng đăng nhập lại.' };
 }
 
 // ── Nội bộ ───────────────────────────────────────────────────────────────────

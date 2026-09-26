@@ -14,7 +14,9 @@
   --gray-1:   #f9fafb;
   --gray-2:   #f3f4f6;
   --gray-3:   #e5e7eb;
+  --gray-4:   #9ca3af;
   --gray-5:   #6b7280;
+  --gray-6:   #4b5563;
   --gray-7:   #374151;
   --gray-9:   #111827;
   --radius:   0.5rem;
@@ -150,6 +152,9 @@ a:hover { text-decoration: underline; }
 .alert-warning { background: var(--orange-lt);color: var(--orange);border-left: 3px solid var(--orange); }
 .alert-info    { background: var(--blue-lt);  color: var(--blue);  border-left: 3px solid var(--blue); }
 
+/* Alpine nạp defer — ẩn khối x-show cho tới khi Alpine khởi tạo */
+[x-cloak] { display: none !important; }
+
 /* ── Forms ──────────────────────────────────────────────────────────────────── */
 .form-group { margin-bottom: 1rem; }
 .form-label { display: block; font-size: .85rem; font-weight: 600; color: var(--gray-7); margin-bottom: .35rem; }
@@ -222,6 +227,7 @@ tr:hover td { background: var(--gray-1); }
 }
 .login-logo { font-size: 1.3rem; font-weight: 800; color: var(--blue); margin-bottom: .25rem; }
 .login-sub  { font-size: .85rem; color: var(--gray-5); margin-bottom: 2rem; }
+.login-card .form-group { text-align: left; }
 .g-signin-wrap { display: flex; justify-content: center; margin-top: 1rem; }
 
 /* ── Spinner ────────────────────────────────────────────────────────────────── */
@@ -270,4 +276,5 @@ tr:hover td { background: var(--gray-1); }
   .cham-cong-btn { font-size: 1.05rem; padding: 1.1rem; }
   .modal { margin: 0; max-height: 100vh; border-radius: 1rem 1rem 0 0; align-self: flex-end; }
   .modal-overlay { align-items: flex-end; padding: 0; }
+  .form-control, input, select, textarea { font-size: 16px; }
 }

@@ -18,7 +18,7 @@ function doiMatKhauApp() {
     async doiMatKhau() {
       this.errorMsg = ''; this.successMsg = '';
       if (!this.matKhauCu)            { this.errorMsg = 'Nhập mật khẩu hiện tại'; return; }
-      if (this.matKhauMoi.length < 6) { this.errorMsg = 'Mật khẩu mới phải có ít nhất 6 ký tự'; return; }
+      if (this.matKhauMoi.length < 8) { this.errorMsg = 'Mật khẩu mới phải có ít nhất 8 ký tự'; return; }
       if (this.matKhauMoi !== this.xacNhan) { this.errorMsg = 'Xác nhận mật khẩu không khớp'; return; }
       if (this.matKhauMoi === this.matKhauCu) { this.errorMsg = 'Mật khẩu mới phải khác mật khẩu cũ'; return; }
 

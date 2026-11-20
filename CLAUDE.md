@@ -14,7 +14,7 @@ Phần mềm chấm công – nghỉ phép – duyệt đơn cho đơn vị **Ch
 - `docs/03-approval-workflow.md` — luồng duyệt + phân quyền.
 - `docs/04-compliance-matrix.md` — đối chiếu Nội quy ↔ chức năng.
 - `docs/05-legal-insurance.md` — BHXH/BHYT/BHTN & lương tối thiểu (cập nhật 2026).
-- `docs/06-bang-cong-template.md` — đặc tả biểu mẫu bảng công tháng (đầu ra GĐ3), trích từ file mẫu `docs/Copy of Chấm công tháng 6.xlsx`.
+- `docs/06-bang-cong-template.md` — đặc tả biểu mẫu bảng công tháng (đầu ra GĐ3), trích từ file mẫu bảng công tháng 6 (file Excel thật KHÔNG lưu trong repo — xin HR).
 - `docs/07-cham-cong-truc-tiep-theo-gio.md` — quy tắc chấm công khối Trực tiếp tính theo giờ (ĐÃ code).
 - `docs/08-duyet-don-3-cap.md` — mọi đơn duyệt đủ 3 cấp 1→2→3 (ĐÃ code).
 - `docs/09-backlog-tinh-nang.md` — backlog tính năng mở rộng + ưu tiên (PHASE NC — ĐÃ code).
@@ -53,7 +53,7 @@ NV → Tổ/Đội trưởng (duyệt cấp 1) → Trưởng/Phó đơn vị (c�
 **GĐ1 đã deploy và đang chạy thực tế.**
 
 Deployment ID: `AKfycbx7UyS8jWiPskvBV6BLC8Gdj8cX0rp7b0TsvsY6uefPxEwjIvEkBeqP-a7QtxTAid1xAQ`  
-Phiên bản hiện tại: **1.0.1**
+Phiên bản hiện tại: **1.0.2** (vá khẩn bảo mật 20/11/2026 — xem `docs/12-va-khan-1.0.2.md`)
 
 Quy trình deploy:
 ```
@@ -96,11 +96,19 @@ Xem `backend/rules/QuyenRules.gs` — `QUYEN_MAP` là nguồn chân lý duy nh�
 
 ### Xác thực (Auth)
 
-- Mật khẩu lưu **plaintext** trong cột `matKhau` sheet NhanVien (không hash).
-- So sánh bằng `String(nv.matKhau) === String(matKhauRaw)` (tránh lỗi number vs string từ Sheets).
-- Không khoá tài khoản khi nhập sai.
+- Mật khẩu hiện lưu **plaintext** trong cột `matKhau` sheet NhanVien (băm có salt: kế hoạch v1.1).
+- **KHÔNG BAO GIỜ trả `matKhau`/`salt` về client**: `_jsonOk` trong Code.gs lọc mọi phản hồi (`_locBiMat`). Không bỏ lớp lọc này.
+- **Không có route không cần token ngoài `login`** (và GET `getPhienBan`). Quên mật khẩu → Admin/HR `resetMatKhau`. Không thêm lại tính năng "đặt lại mật khẩu bằng email".
+- `SESSION_SECRET` (Script Properties, ≥ 32 ký tự) **bắt buộc**, không có giá trị mặc định. Sinh bằng hàm `taoSessionSecret`.
+- Mật khẩu mới ≥ 8 ký tự (`_kiemTraMatKhauMoi`). Reset/import/tạo mới → mật khẩu tạm + `phaiDoiMK=TRUE`; **máy chủ** chặn mọi action trừ `doiMatKhau/getProfile/getHeaderInfo` khi cờ bật (`_chanNeuPhaiDoiMK`).
+- Chỉ Admin thao tác (tạo/sửa/reset) tài khoản vai trò Admin/BGD (`kiemTraTacDongTaiKhoan`). Sửa hồ sơ NV không nhận `matKhau/salt/phaiDoiMK`.
+- **Không ghi email, mật khẩu, dữ liệu nhân sự, file Excel thật vào repo** (repo công khai). Import nhân sự qua sheet `NhanSuImport`; Bootstrap đọc Script Properties `BOOTSTRAP_EMAIL/BOOTSTRAP_MATKHAU`.
+- Không khoá tài khoản khi nhập sai (kế hoạch v1.1).
 - `_resetNVMemo()` được gọi trong `apiLogin` để luôn đọc tươi từ sheet.
-- Cột `salt` còn trong header nhưng để trống — không dùng.
+
+### Kiểm thử Node
+
+`node tests/node/run.js` — nạp toàn bộ `backend/*.gs` vào Node với Sheets giả lập (`tests/node/gas-mock.js`), gọi thẳng `doGet/doPost`. Chạy trước mỗi lần `clasp push`.
 
 ### Versioning & Auto-update
 

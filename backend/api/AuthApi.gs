@@ -1,18 +1,53 @@
 // ─── AuthApi.gs ───────────────────────────────────────────────────────────────
-// Xác thực bằng email + mật khẩu do Admin cấp (lưu hash SHA-256 trong sheet NhanVien).
+// Xác thực bằng email + mật khẩu do Admin cấp (lưu trong sheet NhanVien, KHÔNG bao giờ trả về client).
 // Session token: HMAC-SHA256 tự ký, hết hạn sau 8 giờ.
 // Không dùng Google Identity Services.
 
-// Khóa bí mật ký token — Admin đặt 1 lần trong Apps Script:
-// Project Settings → Script Properties → SESSION_SECRET = 'chuỗi-bí-mật-dài'
+// Khóa bí mật ký token — BẮT BUỘC đặt trong Script Properties (SESSION_SECRET).
+// Cách nhanh: trong Editor chọn hàm taoSessionSecret → Run (tự sinh khoá ngẫu nhiên).
+// v1.0.2: không còn giá trị mặc định — thiếu/ngắn thì từ chối cấp & nhận token.
+const SECRET_TOI_THIEU = 32;
+const MAT_KHAU_TOI_THIEU = 8;
 function _getSecret() {
-  return PropertiesService.getScriptProperties().getProperty('SESSION_SECRET')
-    || '***DA-XOA***'; // thay trong Script Properties khi deploy thật
+  const s = PropertiesService.getScriptProperties().getProperty('SESSION_SECRET');
+  if (!s || String(s).length < SECRET_TOI_THIEU) {
+    // Câu báo cho người dùng không lộ chi tiết; Admin chạy kiemTraAuth để xem nguyên nhân
+    // (thiếu SESSION_SECRET ≥ 32 ký tự → chạy taoSessionSecret).
+    throw new Error('Hệ thống đang bảo trì. Vui lòng liên hệ Admin.');
+  }
+  return String(s);
+}
+
+// Chạy trong Editor (chọn taoSessionSecret → Run). Sinh khoá mới ngẫu nhiên, lưu vào
+// Script Properties. Chạy lại = đổi khoá = MỌI phiên đăng nhập cũ hết hiệu lực.
+function taoSessionSecret() {
+  const s = (Utilities.getUuid() + Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, '');
+  PropertiesService.getScriptProperties().setProperty('SESSION_SECRET', s);
+  Logger.log('✓ Đã đặt SESSION_SECRET mới (' + s.length + ' ký tự). Mọi người cần đăng nhập lại.');
+}
+
+// Kiểm tra độ mạnh tối thiểu cho mật khẩu mới (dùng chung cho đổi/reset/khởi tạo).
+function _kiemTraMatKhauMoi(mk) {
+  mk = String(mk || '');
+  if (mk.length < MAT_KHAU_TOI_THIEU) throw new Error('Mật khẩu mới phải có ít nhất ' + MAT_KHAU_TOI_THIEU + ' ký tự');
+  if (/^(\d)\1+$/.test(mk) || mk === '12345678' || mk === '123456789') throw new Error('Mật khẩu quá dễ đoán');
+  return mk;
+}
+
+// Sinh mật khẩu tạm ngẫu nhiên (bỏ ký tự dễ nhầm 0/O, 1/l/I).
+function taoMatKhauTam() {
+  const kt = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  const b = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,
+    Utilities.getUuid() + Utilities.getUuid() + Date.now(), Utilities.Charset.UTF_8);
+  let s = '';
+  for (let i = 0; i < 10; i++) s += kt[(b[i] & 0xff) % kt.length];
+  return s + '#' + (2 + (b[10] & 0xff) % 8);
 }
 
 // ── Đăng nhập ────────────────────────────────────────────────────────────────
 // Gọi từ Code.gs với action='login' (không cần token trước)
 function apiLogin(body) {
+  _getSecret();   // kiểm cấu hình trước — không để lộ email/mật khẩu đúng sai khi đang lỗi cấu hình
   const { email, matKhau } = body;
   if (!email || !matKhau) throw new Error('Vui lòng nhập email và mật khẩu');
   const em = email.trim().toLowerCase();
@@ -51,7 +86,8 @@ function verifyAndGetUser(token) {
 function apiDoiMatKhau(user, body) {
   const { matKhauCu, matKhauMoi } = body;
   if (!matKhauCu || !matKhauMoi) throw new Error('Thiếu matKhauCu hoặc matKhauMoi');
-  if (matKhauMoi.length < 6) throw new Error('Mật khẩu mới phải có ít nhất 6 ký tự');
+  _kiemTraMatKhauMoi(matKhauMoi);
+  if (String(matKhauMoi) === String(matKhauCu)) throw new Error('Mật khẩu mới phải khác mật khẩu cũ');
 
   const nv = getNVByMa(user.maNV);
   if (!kiemTraMatKhau(nv, matKhauCu)) throw new Error('Mật khẩu cũ không đúng');
@@ -66,7 +102,11 @@ function apiResetMatKhau(user, body) {
   requireQuyen(user, 'QUAN_LY_NV');
   const { maNV, matKhauMoi } = body;
   if (!maNV || !matKhauMoi) throw new Error('Thiếu maNV hoặc matKhauMoi');
-  datMatKhau(maNV, matKhauMoi);
+  _kiemTraMatKhauMoi(matKhauMoi);
+  const nvDich = getNVByMa(maNV);
+  if (!nvDich) throw new Error('Không tìm thấy NV: ' + maNV);
+  kiemTraTacDongTaiKhoan(user, nvDich.vaiTro, '');
+  datMatKhau(maNV, matKhauMoi);   // bật cờ phaiDoiMK: NV phải tự đổi khi đăng nhập
   appendLog(user.maNV, user.email, 'RESET_MAT_KHAU', 'NhanVien', { maNV });
   return { ok: true, message: 'Đã reset mật khẩu cho ' + maNV };
 }
@@ -84,20 +124,6 @@ function apiGetProfile(user) {
       email:    user.email
     }
   };
-}
-
-// ── Quên mật khẩu: đặt lại không cần xác thực ───────────────────────────────
-function apiDatLaiMatKhau(body) {
-  const em = (body.email || '').trim().toLowerCase();
-  const mk = String(body.matKhauMoi || '').trim();
-  if (!em || !mk) throw new Error('Vui lòng nhập đủ thông tin');
-  if (mk.length < 4) throw new Error('Mật khẩu mới phải có ít nhất 4 ký tự');
-  const nv = getNVByEmail(em);
-  if (!nv) throw new Error('Email không tồn tại trong hệ thống');
-  if (nv.trangThai === 'Nghỉ việc') throw new Error('Tài khoản đã bị vô hiệu hoá');
-  datMatKhau(nv.maNV, mk, false);
-  appendLog(nv.maNV, em, 'DAT_LAI_MAT_KHAU', 'Auth', {});
-  return { ok: true, message: 'Đã đặt lại mật khẩu. Vui lòng đăng nhập lại.' };
 }
 
 // ── Nội bộ ───────────────────────────────────────────────────────────────────
@@ -122,8 +148,8 @@ function _verifyToken(token) {
   if (sig !== _hmac(payload, _getSecret())) throw new Error('Token không hợp lệ');
 
   // Kiểm tra hạn
-  const expires = parseInt(payload.split('|')[1]);
-  if (Date.now() > expires) throw new Error('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
+  const expires = Number(payload.split('|')[1]);
+  if (!(expires > Date.now())) throw new Error('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
 
   const email = payload.split('|')[0];
   const nv    = getNVByEmail(email);

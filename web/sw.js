@@ -2,7 +2,7 @@
 // Service worker PWA (NC-H). Cache tĩnh để mở nhanh; KHÔNG cache API Apps Script.
 // Đổi CACHE mỗi khi release phiên bản mới → SW mới cài → báo trang reload.
 
-const CACHE = 'cscc-v1.0.1';
+const CACHE = 'cscc-v1.0.2';
 const ASSETS = [
   'css/main.css', 'js/config.js', 'js/auth.js', 'js/api.js',
   'chamcong.html', 'icon.svg', 'manifest.json'

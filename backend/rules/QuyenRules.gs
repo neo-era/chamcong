@@ -35,6 +35,25 @@ function hasQuyen(user, quyen) {
   return ds.includes(user.vaiTro);
 }
 
+// v1.0.2: chống leo thang quyền — chỉ Admin được tạo/sửa/reset mật khẩu tài khoản
+// Admin hoặc BGĐ, và chỉ Admin được gán vai trò Admin/BGD cho người khác.
+const VAI_TRO_CAP_CAO = ['Admin', 'BGD'];
+const DS_VAI_TRO = Object.keys(VAI_TRO).map(k => VAI_TRO[k]);
+// vaiTro gửi lên phải là chuỗi đúng 1 trong DS_VAI_TRO (chặn mảng/đối tượng/khoảng trắng…).
+// Trả về undefined nếu không gửi vaiTro.
+function chuanHoaVaiTro(v) {
+  if (v === undefined || v === null || v === '') return undefined;
+  if (typeof v !== 'string' || DS_VAI_TRO.indexOf(v) === -1) throw new Error('Vai trò không hợp lệ');
+  return v;
+}
+function kiemTraTacDongTaiKhoan(user, vaiTroHienTai, vaiTroMoi) {
+  vaiTroMoi = chuanHoaVaiTro(vaiTroMoi);
+  if (user.vaiTro === 'Admin') return;
+  if (VAI_TRO_CAP_CAO.indexOf(String(vaiTroHienTai || '').trim()) !== -1 || VAI_TRO_CAP_CAO.indexOf(vaiTroMoi) !== -1) {
+    throw new Error('Chỉ Admin được thao tác với tài khoản vai trò Admin/BGD');
+  }
+}
+
 function requireQuyen(user, quyen) {
   if (!hasQuyen(user, quyen)) {
     throw new Error('Không có quyền thực hiện: ' + quyen + ' (vai trò: ' + user.vaiTro + ')');

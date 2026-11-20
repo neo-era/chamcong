@@ -74,7 +74,7 @@ function quanTriApp() {
     async resetMK() {
       if (!this.mkMaNV)  { this.errorMsg = 'Chọn nhân viên'; return; }
       if (!this.mkMoi.trim()) { this.errorMsg = 'Nhập mật khẩu mới'; return; }
-      if (this.mkMoi.length < 6) { this.errorMsg = 'Mật khẩu tối thiểu 6 ký tự'; return; }
+      if (this.mkMoi.length < 8) { this.errorMsg = 'Mật khẩu tối thiểu 8 ký tự'; return; }
       const nv = this.danhSachNV.find(n => n.maNV === this.mkMaNV);
       if (!confirm('Reset mật khẩu cho ' + (nv ? nv.hoTen : this.mkMaNV) + '?\nNV sẽ phải đổi mật khẩu khi đăng nhập lần sau.')) return;
       this.mkSubmitting = true; this._clearMsg();

@@ -8,9 +8,10 @@ function doGet(e) {
     const action = params.action || '';
     // Endpoint công khai — không cần token
     if (action === 'getPhienBan') {
-      return _jsonOk({ version: getConfig('app_version') || '1.0.1' });
+      return _jsonOk({ version: getConfig('app_version') || '1.0.2' });
     }
     const user   = verifyAndGetUser(params.token);
+    _chanNeuPhaiDoiMK(user, action);
     const result = _routeGet(action, user, params);
     return _jsonOk(result);
   } catch (err) {
@@ -28,11 +29,12 @@ function doPost(e) {
   try {
     const action = body.action || '';
 
-    // Route không cần token
+    // Route không cần token — CHỈ đăng nhập. (v1.0.2: đã gỡ "đặt lại mật khẩu không cần
+    // xác thực"; quên mật khẩu thì Admin/HR reset qua resetMatKhau.)
     if (action === 'login')         return _jsonOk(apiLogin(body));
-    if (action === 'datLaiMatKhau') return _jsonOk(apiDatLaiMatKhau(body));
 
     const user   = verifyAndGetUser(body.token);
+    _chanNeuPhaiDoiMK(user, action);
     const result = _routePost(action, user, body);
     return _jsonOk(result);
   } catch (err) {
@@ -65,7 +67,7 @@ function _routeGet(action, user, params) {
     case 'xuatBangCong':         return apiXuatBangCong(user, params);
     case 'getCanhBao':           return apiGetCanhBao(user, params);
     case 'getAuditLog':          return apiGetAuditLog(user, params);
-    case 'getCauHinh':           return { ok: true, data: getAllConfig() };
+    case 'getCauHinh':           return apiGetCauHinh(user);
     default:
       throw new Error('GET action không hợp lệ: ' + action);
   }
@@ -104,10 +106,33 @@ function _routePost(action, user, body) {
   }
 }
 
+// ── Ép đổi mật khẩu kiểm ở máy chủ (v1.0.2) ─────────────────────────────────
+// Tài khoản đang mang mật khẩu tạm (phaiDoiMK=TRUE) chỉ được đổi mật khẩu và
+// các lệnh mà trang Đổi mật khẩu cần để hiển thị.
+const _ACTION_KHI_PHAI_DOI_MK = ['doiMatKhau', 'getProfile', 'getHeaderInfo', 'getThongBao', 'danhDauThongBao'];
+function _chanNeuPhaiDoiMK(user, action) {
+  if (String(user && user.phaiDoiMK || '').trim().toUpperCase() !== 'TRUE') return;
+  if (_ACTION_KHI_PHAI_DOI_MK.indexOf(action) !== -1) return;
+  throw new Error('Bạn cần đổi mật khẩu trước khi sử dụng hệ thống.');
+}
+
 // ── Response helpers ──────────────────────────────────────────────────────────
+// v1.0.2: lớp chặn chung — không bao giờ để mật khẩu/salt rời máy chủ,
+// dù api nào lỡ trả nguyên dòng sheet NhanVien.
+const _KHOA_BI_MAT = { matKhau: 1, salt: 1 };
+function _locBiMat(v) {
+  if (Array.isArray(v)) return v.map(_locBiMat);
+  if (v && typeof v === 'object' && !(v instanceof Date)) {
+    const o = {};
+    Object.keys(v).forEach(k => { if (!_KHOA_BI_MAT[k]) o[k] = _locBiMat(v[k]); });
+    return o;
+  }
+  return v;
+}
+
 function _jsonOk(data) {
   return ContentService
-    .createTextOutput(JSON.stringify(data))
+    .createTextOutput(JSON.stringify(_locBiMat(data)))
     .setMimeType(ContentService.MimeType.JSON);
 }
 

@@ -43,13 +43,12 @@ clasp push --force
 
 ### 2d. Đặt khóa bí mật SESSION_SECRET
 
-Trong Apps Script Editor → **Project Settings → Script Properties → Add property**:
+**Bắt buộc** (từ v1.0.2 thiếu khoá này thì không ai đăng nhập được). Cách nhanh nhất:
+trong Apps Script Editor chọn hàm **`taoSessionSecret`** → **Run**. Hàm tự sinh chuỗi ngẫu
+nhiên 96 ký tự và lưu vào **Project Settings → Script Properties → `SESSION_SECRET`**.
 
-| Property | Value |
-|----------|-------|
-| `SESSION_SECRET` | *(chuỗi ngẫu nhiên dài ≥ 32 ký tự, ví dụ: `***DA-XOA***`)* |
-
-> Đây là khóa ký session token. Giữ bí mật. Đổi key → tất cả user phải đăng nhập lại.
+> Đây là khóa ký session token. Giữ bí mật, KHÔNG ghi vào mã nguồn hay tài liệu.
+> Chạy lại `taoSessionSecret` = đổi khoá → mọi người phải đăng nhập lại (dùng khi nghi lộ).
 
 ### 2e. Khởi tạo dữ liệu ban đầu
 
@@ -61,28 +60,13 @@ Trong Apps Script Editor:
 
 ### 2f. Tạo tài khoản Admin đầu tiên
 
-Trong Apps Script Editor, mở **Console** (View → Logs) hoặc chạy function tạm:
+Không ghi email/mật khẩu vào mã hay tài liệu (repo công khai).
 
-```javascript
-// Chạy 1 lần trong Editor để tạo NV Admin
-function taoAdminDauTien() {
-  createNV({
-    maNV:    'NV001',
-    hoTen:   'Nguyễn Văn Admin',
-    donVi:   'Ban Giám đốc',
-    khoi:    'Gián tiếp',
-    chucDanh:'Quản trị viên',
-    dieuKienCV: 'Bình thường',
-    ngayVaoLam: '2020-01-01',
-    trangThai:  'Đang làm',
-    email:   'admin@cscc.vn',
-    vaiTro:  'Admin'
-  });
-  setPassword('NV001', '***DA-XOA***');
-}
-```
-
-Sau khi chạy xong, đăng nhập bằng `admin@cscc.vn` / `***DA-XOA***` rồi đổi mật khẩu ngay.
+1. **Project Settings → Script Properties**, thêm tạm:
+   - `BOOTSTRAP_EMAIL` = email đăng nhập của Admin
+   - `BOOTSTRAP_MATKHAU` = mật khẩu tạm (≥ 8 ký tự, chỉ mình bạn biết)
+2. Chọn hàm **`bootstrapAdmin`** → **Run**. Hàm tạo tài khoản Admin, đặt mật khẩu tạm rồi tự xoá `BOOTSTRAP_MATKHAU`.
+3. Đăng nhập → hệ thống bắt buộc đổi mật khẩu ngay.
 
 ### 2g. Deploy Web App
 

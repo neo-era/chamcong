@@ -1,6 +1,15 @@
 // ─── QuanTriApi.gs ────────────────────────────────────────────────────────────
 // Quản trị hệ thống (GĐ4): sửa CauHinh + xem AuditLog.
 
+// GET action=getCauHinh — v1.0.2: Admin xem toàn bộ; vai trò khác chỉ nhận các khoá
+// giao diện cần (tránh lộ ngưỡng kỷ luật, địa bàn, email kỹ thuật…).
+const CAU_HINH_CONG_KHAI = ['dinh_muc_viec_rieng', 'ngay_le_tet', 'app_version', 'timezone'];
+function apiGetCauHinh(user) {
+  const tatCa = getAllConfig();
+  if (hasQuyen(user, 'QUAN_TRI')) return { ok: true, data: tatCa };
+  return { ok: true, data: tatCa.filter(c => CAU_HINH_CONG_KHAI.indexOf(c.key) !== -1) };
+}
+
 // POST action=setCauHinh  body {key, value, moTa?}  — Admin only
 function apiSetCauHinh(user, body) {
   requireQuyen(user, 'QUAN_TRI');

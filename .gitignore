@@ -24,6 +24,12 @@ credentials.json
 .idea/
 .DS_Store
 
+# Dữ liệu thật (nhân sự, bảng công…) — KHÔNG đưa lên repo công khai (v1.0.2)
+*.xlsx
+*.xls
+*.csv
+docs/du-lieu-that/
+
 # Temp Office lock files
 ~$*.docx
 ~$*.xlsx

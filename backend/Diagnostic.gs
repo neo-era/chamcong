@@ -84,11 +84,12 @@ function kiemTraAuth() {
   const secret = PropertiesService.getScriptProperties().getProperty('SESSION_SECRET');
   if (!secret) {
     L('❌ SESSION_SECRET CHƯA ĐƯỢC ĐẶT!');
-    L('   → Vào Project Settings → Script Properties → thêm SESSION_SECRET');
+    L('   → Chạy hàm taoSessionSecret (hoặc Project Settings → Script Properties → thêm SESSION_SECRET ≥ 32 ký tự)');
     return;
   }
-  if (secret === '***DA-XOA***') {
-    L('⚠️  SESSION_SECRET đang dùng giá trị mặc định — nên đổi thành chuỗi bí mật riêng!');
+  if (String(secret).length < 32) {
+    L('❌ SESSION_SECRET quá ngắn (' + String(secret).length + ' ký tự) — chạy taoSessionSecret để sinh khoá mới');
+    return;
   } else {
     L('✅ SESSION_SECRET đã đặt (' + secret.length + ' ký tự)');
   }
@@ -107,4 +108,35 @@ function kiemTraAuth() {
   }
 
   L('================================================');
+}
+
+
+// ── v1.0.2: làm sạch mật khẩu đã lỡ ghi vào AuditLog (bản ≤ 1.0.1 ghi nguyên
+// "updates" khi sửa hồ sơ NV, có thể kèm matKhau). Chạy 1 lần trong Editor sau khi deploy.
+// Chỉ xoá khoá matKhau/salt bên trong JSON cột chiTiet; giữ nguyên mọi thông tin khác.
+function lamSachMatKhauAuditLog() {
+  const sh = getSheet('AuditLog');
+  const data = sh.getDataRange().getValues();
+  if (data.length < 2) return;
+  const col = data[0].indexOf('chiTiet');
+  if (col === -1) return;
+  const boKhoa = v => {
+    if (Array.isArray(v)) return v.map(boKhoa);
+    if (v && typeof v === 'object') {
+      const o = {};
+      Object.keys(v).forEach(k => { if (k !== 'matKhau' && k !== 'salt') o[k] = boKhoa(v[k]); });
+      return o;
+    }
+    return v;
+  };
+  let sua = 0;
+  for (let i = 1; i < data.length; i++) {
+    const raw = String(data[i][col] || '');
+    if (raw.indexOf('matKhau') === -1 && raw.indexOf('salt') === -1) continue;
+    let moi;
+    try { moi = JSON.stringify(boKhoa(JSON.parse(raw))); }
+    catch (_) { moi = raw.replace(/"(matKhau|salt)"\s*:\s*("(?:[^"\\]|\\.)*"|[^,}\]]*)/g, '"$1":"***"'); }
+    if (moi !== raw) { sh.getRange(i + 1, col + 1).setValue(moi); sua++; }
+  }
+  Logger.log('✓ Đã làm sạch ' + sua + ' dòng AuditLog có mật khẩu. Nhớ xoá/thay các bản sao lưu cũ.');
 }

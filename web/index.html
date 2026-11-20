@@ -37,38 +37,8 @@
         </button>
       </form>
 
-      <!-- Link quên mật khẩu -->
-      <div style="text-align:center;margin-top:.9rem;">
-        <button type="button" @click="buoc='reset'; errorMsg=''; otpMsg=''"
-                style="background:none;border:none;color:#1a56db;font-size:.82rem;cursor:pointer;text-decoration:underline;"
-                x-show="buoc==='login'">Quên mật khẩu?</button>
-        <button type="button" @click="buoc='login'; errorMsg=''"
-                style="background:none;border:none;color:#1a56db;font-size:.82rem;cursor:pointer;text-decoration:underline;"
-                x-show="buoc!=='login'">← Quay lại đăng nhập</button>
-      </div>
-
-      <!-- Đặt lại mật khẩu -->
-      <div x-show="buoc==='reset'" x-cloak style="margin-top:1rem;">
-        <div class="form-group">
-          <label class="form-label">Email</label>
-          <input class="form-control" type="email" x-model="emailQuen" placeholder="email@cscc.vn" :disabled="loading">
-        </div>
-        <div class="form-group" style="margin-top:.6rem;">
-          <label class="form-label">Mật khẩu mới</label>
-          <input class="form-control" type="password" x-model="matKhauMoi" placeholder="Nhập mật khẩu mới" :disabled="loading">
-        </div>
-        <div x-show="errorMsg" x-text="errorMsg" class="alert alert-error" style="margin-top:.5rem;"></div>
-        <div x-show="otpMsg"   x-text="otpMsg"   class="alert alert-success" style="margin-top:.5rem;"></div>
-        <button type="button" class="btn btn-primary" style="width:100%;margin-top:.75rem;"
-                @click="doDatLai()" :disabled="loading">
-          <span x-show="!loading">Đặt lại mật khẩu</span>
-          <span x-show="loading">Đang xử lý…</span>
-        </button>
-      </div>
-
-      <p style="margin-top:1.25rem;font-size:.78rem;color:var(--gray-5);text-align:center;"
-         x-show="buoc==='login'">
-        Tài khoản do HR/Admin cấp.<br>Liên hệ Admin nếu không vào được.
+      <p style="margin-top:1.25rem;font-size:.78rem;color:var(--gray-5);text-align:center;">
+        Tài khoản do HR/Admin cấp.<br><strong>Quên mật khẩu?</strong> Liên hệ HR hoặc Admin để được cấp mật khẩu tạm mới.
       </p>
     </div>
   </div>
@@ -81,9 +51,6 @@
       return {
         email: '', matKhau: '',
         loading: false, errorMsg: '',
-        // quên mật khẩu
-        buoc: 'login',   // 'login' | 'reset'
-        emailQuen: '', matKhauMoi: '', otpMsg: '',
 
         init() {
           if (isLoggedIn()) {
@@ -100,24 +67,6 @@
             const redirect = sessionStorage.getItem('cc_redirect') || 'chamcong.html';
             sessionStorage.removeItem('cc_redirect');
             window.location.href = redirect;
-          } catch (e) { this.errorMsg = e.message; }
-          finally { this.loading = false; }
-        },
-
-        async doDatLai() {
-          this.errorMsg = ''; this.otpMsg = '';
-          if (!this.emailQuen || !this.matKhauMoi) { this.errorMsg = 'Vui lòng nhập đủ thông tin'; return; }
-          this.loading = true;
-          try {
-            const res = await fetch(CONFIG.BACKEND_URL, {
-              method: 'POST',
-              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-              body: JSON.stringify({ action: 'datLaiMatKhau', email: this.emailQuen, matKhauMoi: this.matKhauMoi })
-            });
-            const d = await res.json();
-            if (!d.ok) throw new Error(d.error || 'Lỗi đặt lại mật khẩu');
-            this.otpMsg = d.message;
-            setTimeout(() => { this.buoc = 'login'; this.matKhauMoi = ''; this.otpMsg = ''; }, 2000);
           } catch (e) { this.errorMsg = e.message; }
           finally { this.loading = false; }
         }

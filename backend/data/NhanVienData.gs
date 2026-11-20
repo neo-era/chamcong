@@ -30,7 +30,7 @@ function getNVByEmail(email) {
 }
 
 function getNVByMa(maNV) {
-  return _allNV().find(o => o.maNV === maNV) || null;
+  return _allNV().find(o => String(o.maNV) === String(maNV)) || null;
 }
 
 function listNV(filters) {
@@ -60,6 +60,7 @@ function updateNV(maNV, updates) {
   // Không cho cập nhật email (tránh mất liên kết auth)
   delete updates.email;
   delete updates.maNV;
+  delete updates.matKhau; delete updates.salt; delete updates.phaiDoiMK;   // chỉ qua datMatKhau
   Object.assign(found.obj, updates);
   updateRow(sh, found.row, found.obj, NV_HEADERS);
   _resetNVMemo();
@@ -98,7 +99,7 @@ function kiemTraMatKhau(nv, matKhauRaw) {
 }
 
 // ── Tiện ích dùng trong Apps Script Editor ──────────────────────────────────
-// Admin chạy: setPassword('NV001', 'matkhau123')
+// Admin chạy: setPassword('NV001', '<mật khẩu tạm ≥ 8 ký tự>') — NV sẽ bị ép đổi khi đăng nhập
 function setPassword(maNV, matKhauRaw) {
   datMatKhau(maNV, matKhauRaw);
   Logger.log('✓ Đã đặt mật khẩu cho ' + maNV);

@@ -8,7 +8,7 @@ Tài liệu dành cho người dùng cuối. Giao diện tiếng Việt, dùng t
 
 1. Mở trang web hệ thống.
 2. Nhập **Email** và **Mật khẩu** do quản trị/HR cấp → bấm **Đăng nhập**.
-3. Mật khẩu mặc định ban đầu là `123456` (nên đổi sau lần đăng nhập đầu).
+3. Mật khẩu ban đầu là **mật khẩu tạm** do HR/Admin cấp riêng cho từng người; lần đăng nhập đầu hệ thống bắt buộc đổi (tối thiểu 8 ký tự).
 
 > Phiên đăng nhập tự hết hạn sau **8 giờ** — khi đó cần đăng nhập lại.
 > Mỗi vai trò thấy các menu khác nhau (xem mục 3).
@@ -191,7 +191,7 @@ Menu **Nhân viên**:
 ## 14. Câu hỏi thường gặp
 
 **Không đăng nhập được?**
-- Kiểm tra đúng email + mật khẩu (mặc định `123456`). Báo HR đặt lại nếu cần.
+- Kiểm tra đúng email + mật khẩu. Quên mật khẩu thì báo HR/Admin cấp mật khẩu tạm mới.
 - "Phiên đăng nhập hết hạn" → đăng nhập lại (phiên 8 giờ).
 
 **Tạo đơn nhưng không thấy ai duyệt?**

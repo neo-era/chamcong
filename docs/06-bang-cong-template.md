@@ -1,6 +1,6 @@
 # 06 — Biểu mẫu Bảng công tháng (đầu ra GĐ3)
 
-> Đặc tả định dạng kết xuất bảng công, trích từ file mẫu thực tế `docs/Copy of Chấm công tháng 6.xlsx`.
+> Đặc tả định dạng kết xuất bảng công, trích từ file mẫu thực tế bảng công tháng 6 (file Excel thật chứa dữ liệu nhân sự — **không lưu trong repo công khai**, xin bản ở HR/Drive nội bộ).
 > Hệ thống (GĐ3, `api/BangCongApi.gs`) phải xuất được biểu mẫu **tương đương** gồm 2 sheet: **CHI TIẾT** và **TỔNG HỢP**.
 
 ## Nguyên tắc chung
@@ -69,4 +69,4 @@ Tiêu đề: `BẢNG TỔNG HỢP CHẤM CÔNG THÁNG MM NĂM YYYY`. Mỗi NV **
 
 - Tạo Spreadsheet tạm bằng `SpreadsheetApp.create()` hoặc dùng template có sẵn (copy file mẫu), ghi 2 sheet, rồi xuất `.xlsx` qua `DriveApp`/export URL; HOẶC xuất **CSV/HTML** đơn giản nếu chỉ cần dữ liệu.
 - Giữ định dạng merge header + chân ký nếu xuất `.xlsx` từ template (khuyến nghị: clone file mẫu rồi đổ dữ liệu vào vùng từ dòng 12).
-- File mẫu để tham chiếu định dạng: `docs/Copy of Chấm công tháng 6.xlsx` (2 sheet: `CT5` chi tiết, `CC5` tổng hợp).
+- File mẫu để tham chiếu định dạng: bảng công tháng 6 bản Excel (2 sheet: `CT5` chi tiết, `CC5` tổng hợp) — lưu ở Drive nội bộ, không đưa lên repo.

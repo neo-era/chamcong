@@ -34,7 +34,19 @@ async function _parseResp(resp) {
   let json;
   try { json = await resp.json(); }
   catch (_) { throw new Error('Phản hồi từ máy chủ không hợp lệ'); }
-  if (!json.ok) throw new Error(json.error || 'Lỗi không xác định từ máy chủ');
+  if (!json.ok) {
+    const msg = json.error || 'Lỗi không xác định từ máy chủ';
+    // v1.0.2: phiên hỏng/hết hạn (vd sau khi đổi khoá ký) → về trang đăng nhập thay vì báo lỗi khó hiểu
+    if (/Token không hợp lệ|Phiên đăng nhập hết hạn|Chưa đăng nhập|Tài khoản không tồn tại|vô hiệu hoá/i.test(msg)) {
+      logout(); throw new Error('Phiên đăng nhập đã hết. Vui lòng đăng nhập lại.');
+    }
+    // Bị bắt đổi mật khẩu (vd HR vừa reset) → chuyển sang trang đổi mật khẩu
+    if (/cần đổi mật khẩu/i.test(msg) && !location.pathname.endsWith('doi-mat-khau.html')) {
+      try { const u = getCurrentUser(); if (u) { u.phaiDoiMK = 'TRUE'; sessionStorage.setItem('cc_user', JSON.stringify(u)); } } catch (_) {}
+      location.href = 'doi-mat-khau.html';
+    }
+    throw new Error(msg);
+  }
   return json;
 }
 

@@ -36,6 +36,7 @@ async function login(email, matKhau) {
 function logout() {
   sessionStorage.removeItem(TOKEN_KEY);
   sessionStorage.removeItem(USER_KEY);
+  try { Object.keys(sessionStorage).filter(k => k.indexOf('cc_cache_') === 0).forEach(k => sessionStorage.removeItem(k)); } catch (_) {}
   window.location.href = 'index.html';
 }
 
@@ -152,7 +153,7 @@ async function _setupHeaderInfo(activePage, vaiTro) {
   bell.addEventListener('click', (e) => { e.stopPropagation(); drop.style.display = drop.style.display === 'none' ? 'block' : 'none'; });
   document.addEventListener('click', () => { drop.style.display = 'none'; });
   drop.addEventListener('click', (e) => {
-    if (e.target.classList.contains('tb-readall')) { e.preventDefault(); Api.danhDauThongBao({}).then(() => load(true)); }
+    if (e.target.classList.contains('tb-readall')) { e.preventDefault(); Api.danhDauThongBao({}).then(() => load(true)).catch(() => {}); }
   });
   load();
 }
